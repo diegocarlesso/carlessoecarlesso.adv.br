@@ -1,0 +1,7 @@
+Options -Indexes
+
+# Apenas endpoints conhecidos
+<FilesMatch "^(?!upload|media|contact).*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

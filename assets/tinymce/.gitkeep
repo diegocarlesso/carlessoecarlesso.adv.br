@@ -1,0 +1,3 @@
+TinyMCE será instalado aqui via /admin/install-tinymce.php.
+Este diretório fica vazio no zip. Após login admin, vá em
+Configurações → Instalar TinyMCE para o download automático.

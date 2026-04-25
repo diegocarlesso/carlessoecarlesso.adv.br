@@ -1,0 +1,7 @@
+Options -Indexes
+
+# Proteger includes do admin
+<FilesMatch "^(header|footer|sidebar)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
