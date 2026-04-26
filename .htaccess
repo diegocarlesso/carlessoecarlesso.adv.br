@@ -2,16 +2,24 @@ Options -Indexes
 ServerSignature Off
 
 # Bloquear acesso a arquivos sensíveis
-<FilesMatch "(\.env|\.git|composer\.json|composer\.lock|package\.json|\.htpasswd|\.DS_Store)">
+<FilesMatch "(\.env|\.git|composer\.json|composer\.lock|package\.json|\.htpasswd|\.DS_Store|phpunit\.xml)">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
 # Bloquear config fora do public_html (redundância)
-<FilesMatch "\.(env|bak|sql|log|sh|py|rb|ini)$">
+<FilesMatch "\.(env|bak|sql|log|sh|py|rb|ini|lock)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
+
+# Bloquear acesso direto a /vendor/ /src/ /bin/ caso sejam dropadas dentro do public_html.
+# (No layout padrão essas pastas vivem fora do public_html, mas este redirecionamento
+# protege quem por desencargo ou hospedagem com restrições as colocou aqui.)
+RedirectMatch 404 /\.git
+RedirectMatch 404 /vendor/.*
+RedirectMatch 404 /src/.*
+RedirectMatch 404 /bin/.*
 
 # Forçar HTTPS
 # RewriteCond %{HTTPS} off
@@ -39,6 +47,13 @@ RewriteRule ^(.*)$ index.php?slug=$1 [L,QSA]
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy — modo Report-Only (Phase 1 rev 1.2).
+    # Após uma semana sem violações no log (storage/cache/csp-reports.log),
+    # Phase 4 troca para Content-Security-Policy enforced.
+    # Note style-src-attr 'unsafe-inline' — necessário pela estratégia de CSS de §3.6
+    # (atributos style="..." controlados em blocos predefinidos).
+    Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-src 'self' https://www.google.com https://www.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report.php"
 </IfModule>
 
 # Cache estático

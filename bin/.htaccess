@@ -1,0 +1,13 @@
+# Carlesso CMS — bloqueia acesso web direto a /bin/.
+# Os scripts CLI aqui (backup-db.php, etc.) NUNCA devem ser executados
+# via HTTP — só via PHP CLI ou cron.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

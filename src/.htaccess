@@ -1,0 +1,15 @@
+# Carlesso CMS — bloqueia acesso web direto a /src/.
+# Se o layout HOSTINGER for usado (src/ dentro de public_html/),
+# este .htaccess é a proteção principal contra leitura/execução remota.
+# No layout PARENT (src/ acima de public_html/) este arquivo é
+# inofensivo defesa em profundidade.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+Options -Indexes

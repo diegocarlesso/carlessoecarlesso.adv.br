@@ -7,10 +7,10 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-Auth::requireRole('editor');
+Auth::requireCan('media.upload');
 
 // Delete
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth::isAdmin()) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth::can('media.delete')) {
     CSRF::check();
     $mid   = (int)$_POST['delete_id'];
     $media = Database::fetchOne('SELECT * FROM media WHERE id = ?', [$mid]);
@@ -139,7 +139,7 @@ include __DIR__ . '/includes/header.php';
              style="width:100%;padding:5px 8px;background:rgba(255,255,255,.75);border:none;border-radius:3px;font-size:.7rem;font-weight:600;cursor:pointer;text-align:center;color:#000;text-decoration:none">
             👁 Abrir
           </a>
-          <?php if (Auth::isAdmin()): ?>
+          <?php if (Auth::can('media.delete')): ?>
           <form method="POST" style="width:100%">
             <?= CSRF::field() ?>
             <input type="hidden" name="delete_id" value="<?= $m['id'] ?>">

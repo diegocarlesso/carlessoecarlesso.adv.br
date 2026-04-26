@@ -8,7 +8,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-Auth::requireRole('editor');
+Auth::requireCan('pages.edit');
 
 $action = $_GET['action'] ?? 'list';
 $id     = (int)($_GET['id'] ?? 0);
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ── DELETE ────────────────────────────────────────────────
-if ($action === 'delete' && $id && Auth::isAdmin()) {
+if ($action === 'delete' && $id && Auth::can('pages.delete')) {
     CSRF::check();
     Database::query('DELETE FROM paginas WHERE id = ?', [$id]);
     flash('success', 'Página removida.');
@@ -165,7 +165,7 @@ if ($action === 'list'): ?>
               <a href="/admin/paginas.php?action=edit&id=<?= $pg['id'] ?>" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem">
                 <span class="i i-pencil"></span>
               </a>
-              <?php if (Auth::isAdmin()): ?>
+              <?php if (Auth::can('pages.delete')): ?>
               <form method="POST" action="/admin/paginas.php?action=delete&id=<?= $pg['id'] ?>" style="display:inline">
                 <?= CSRF::field() ?>
                 <button type="submit" class="topbar-btn danger" style="padding:4px 8px;font-size:.72rem"

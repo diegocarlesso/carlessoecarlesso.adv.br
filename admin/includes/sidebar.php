@@ -1,30 +1,44 @@
 <?php
 // admin/includes/sidebar.php
+// Sidebar com filtragem por permissão granular (rev v1.5).
+// Cada link só aparece se o usuário tem a capability necessária.
 if (!defined('CARLESSO_CMS')) exit;
+
 $currentFile = basename($_SERVER['PHP_SELF']);
 $user = Auth::user();
+
 function isActive(string $file): string {
     global $currentFile;
     return $currentFile === $file ? 'active' : '';
 }
+
+/**
+ * Renderiza um item de menu apenas se o usuário tem a permissão necessária.
+ * Use null em $perm para "sempre visível" (ex: dashboard).
+ */
+function navItem(string $href, ?string $perm, string $icon, string $label, ?string $extra = ''): void {
+    if ($perm !== null && !Auth::can($perm)) return;
+    $active = isActive(basename($href));
+    echo '<li><a href="' . htmlspecialchars($href, ENT_QUOTES) . '" class="' . $active . '">'
+       . '<span class="icon">' . $icon . '</span> ' . htmlspecialchars($label, ENT_QUOTES);
+    if ($extra) echo $extra;
+    echo '</a></li>';
+}
 ?>
 <aside class="sidebar" id="sidebar">
-  <!-- Brand -->
   <div class="sidebar-brand">
     <div class="sidebar-logo">⚖</div>
     <div class="brand-text">
-      <div class="name">Carlesso & Carlesso</div>
+      <div class="name">Carlesso &amp; Carlesso</div>
       <div class="subtitle">Painel CMS</div>
     </div>
   </div>
 
-  <!-- Menu principal -->
+  <!-- Principal -->
   <div class="sidebar-section">
     <div class="sidebar-section-label">Principal</div>
     <ul class="sidebar-nav">
-      <li><a href="/admin/index.php" class="<?= isActive('index.php') ?>">
-        <span class="icon">⊞</span> Dashboard
-      </a></li>
+      <?php navItem('/admin/index.php', null, '⊞', 'Dashboard'); ?>
     </ul>
   </div>
 
@@ -32,58 +46,50 @@ function isActive(string $file): string {
   <div class="sidebar-section">
     <div class="sidebar-section-label">Conteúdo</div>
     <ul class="sidebar-nav">
-      <li><a href="/admin/paginas.php" class="<?= isActive('paginas.php') ?>">
-        <span class="icon">📄</span> Páginas
-      </a></li>
-      <li><a href="/admin/postagens.php" class="<?= isActive('postagens.php') ?>">
-        <span class="icon">📝</span> Produções
-      </a></li>
-      <li><a href="/admin/conteudos.php" class="<?= isActive('conteudos.php') ?>">
-        <span class="icon">✏️</span> Seções
-      </a></li>
-      <li><a href="/admin/media.php" class="<?= isActive('media.php') ?>">
-        <span class="icon">🖼️</span> Biblioteca de Mídia
-      </a></li>
+      <?php
+      navItem('/admin/postagens.php', 'posts.edit', '📝', 'Produções');
+      navItem('/admin/paginas.php',   'pages.edit', '📄', 'Páginas');
+      navItem('/admin/conteudos.php', 'pages.edit', '✏️', 'Seções');
+      navItem('/admin/media.php',     'media.upload', '🖼️', 'Biblioteca de Mídia');
+      ?>
     </ul>
   </div>
 
   <!-- Mensagens -->
   <?php
   $unreadCount = 0;
-  try { $unreadCount = (int)(Database::fetchOne('SELECT COUNT(*) AS c FROM contatos WHERE lido=0')['c'] ?? 0); } catch(Exception $e){}
+  if (Auth::can('settings.manage')) {
+      try { $unreadCount = (int)(Database::fetchOne('SELECT COUNT(*) AS c FROM contatos WHERE lido=0')['c'] ?? 0); } catch (\Throwable $e) {}
+  }
+  $badgeHtml = $unreadCount > 0 ? '<span class="badge">' . $unreadCount . '</span>' : '';
   ?>
+  <?php if (Auth::can('settings.manage')): ?>
   <div class="sidebar-section">
     <div class="sidebar-section-label">Comunicação</div>
     <ul class="sidebar-nav">
-      <li><a href="/admin/contatos.php" class="<?= isActive('contatos.php') ?>">
-        <span class="icon">✉️</span> Mensagens
-        <?php if ($unreadCount > 0): ?>
-          <span class="badge"><?= $unreadCount ?></span>
-        <?php endif; ?>
-      </a></li>
+      <?php navItem('/admin/contatos.php', 'settings.manage', '✉️', 'Mensagens', $badgeHtml); ?>
     </ul>
   </div>
+  <?php endif; ?>
 
   <!-- Configurações -->
+  <?php
+  $hasAnyConfig = Auth::can('settings.manage') || Auth::can('appearance.manage') || Auth::can('users.manage');
+  if ($hasAnyConfig):
+  ?>
   <div class="sidebar-section">
     <div class="sidebar-section-label">Configurações</div>
     <ul class="sidebar-nav">
-      <li><a href="/admin/seo.php" class="<?= isActive('seo.php') ?>">
-        <span class="icon">🔍</span> SEO
-      </a></li>
-      <li><a href="/admin/aparencia.php" class="<?= isActive('aparencia.php') ?>">
-        <span class="icon">🎨</span> Aparência
-      </a></li>
-      <li><a href="/admin/configs.php" class="<?= isActive('configs.php') ?>">
-        <span class="icon">⚙️</span> Configurações
-      </a></li>
-      <?php if (Auth::isAdmin()): ?>
-      <li><a href="/admin/usuarios.php" class="<?= isActive('usuarios.php') ?>">
-        <span class="icon">👥</span> Usuários
-      </a></li>
-      <?php endif; ?>
+      <?php
+      navItem('/admin/seo.php',        'settings.manage',   '🔍', 'SEO');
+      navItem('/admin/aparencia.php',  'appearance.manage', '🎨', 'Aparência');
+      navItem('/admin/configs.php',    'settings.manage',   '⚙️', 'Configurações');
+      navItem('/admin/usuarios.php',   'users.manage',      '👥', 'Usuários');
+      navItem('/admin/permissoes.php', 'users.manage',      '🔐', 'Permissões');
+      ?>
     </ul>
   </div>
+  <?php endif; ?>
 
   <!-- Ver site -->
   <div class="sidebar-section">
@@ -101,6 +107,7 @@ function isActive(string $file): string {
       <div class="name"><?= e($user['full_name'] ?: $user['username']) ?></div>
       <div class="role"><?= e($user['role']) ?></div>
     </div>
+    <a href="/admin/perfil.php" class="logout" title="Meu perfil" style="margin-right:6px">⚙</a>
     <a href="/admin/logout.php" class="logout" title="Sair">⏻</a>
   </div>
 </aside>

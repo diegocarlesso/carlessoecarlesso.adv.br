@@ -39,6 +39,7 @@ $pageDescOut  = $seoDesc  ?? '';
 
   <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(PUBLIC_PATH . '/assets/css/style.css') ?: '1' ?>">
   <link rel="stylesheet" href="/assets/css/style-extras.css?v=<?= @filemtime(PUBLIC_PATH . '/assets/css/style-extras.css') ?: '1' ?>">
+  <link rel="stylesheet" href="/assets/css/blocks.css?v=<?= @filemtime(PUBLIC_PATH . '/assets/css/blocks.css') ?: '1' ?>">
   <link rel="stylesheet" href="/assets/icons/icons.css?v=1">
 </head>
 <body data-page="<?= e($currentSlug) ?>">

@@ -1,0 +1,4 @@
+# Bloqueia acesso web ao diretório /config (defesa em profundidade)
+# /config/.env contém credenciais; nunca deve ser servido pelo Apache.
+Order allow,deny
+Deny from all

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-Auth::requireRole('admin');
+Auth::requireCan('appearance.manage');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     CSRF::check();
