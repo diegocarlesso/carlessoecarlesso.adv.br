@@ -2,6 +2,56 @@
 (function () {
   'use strict';
 
+  // ═══════════════════════════════════════════════════════════════════
+  //  Proteção anti-cópia (obscuridade, não segurança real)
+  //  Bloqueia: clique direito, F12, Ctrl+U, Ctrl+Shift+I/J/C, Ctrl+S, Ctrl+P
+  //  Detecta DevTools aberto via diferença de tamanho window outer/inner
+  //  Para desativar: adicione data-no-protect="1" ao <body>
+  //  IMPORTANTE: usuário com conhecimento técnico contorna fácil. Nunca
+  //  coloque informação sensível no HTML/JS confiando só nisso.
+  // ═══════════════════════════════════════════════════════════════════
+  if (!document.body.dataset.noProtect) {
+    // Botão direito do mouse
+    document.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      return false;
+    });
+
+    // Atalhos de teclado para devtools / view source / save / print
+    document.addEventListener('keydown', e => {
+      const k = e.key.toLowerCase();
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      // F12 (DevTools)
+      if (e.key === 'F12') { e.preventDefault(); return false; }
+
+      // Ctrl+U (view source)
+      if (ctrl && k === 'u') { e.preventDefault(); return false; }
+
+      // Ctrl+S (salvar página)
+      if (ctrl && k === 's') { e.preventDefault(); return false; }
+
+      // Ctrl+P (imprimir)
+      if (ctrl && k === 'p') { e.preventDefault(); return false; }
+
+      // Ctrl+Shift+I (DevTools), Ctrl+Shift+J (Console), Ctrl+Shift+C (Inspector)
+      if (ctrl && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+
+    // Bloqueia drag de imagens / texto
+    document.addEventListener('dragstart', e => e.preventDefault());
+
+    // Disable text selection (opcional — comentado pra não atrapalhar leitura)
+    // document.body.style.userSelect = 'none';
+    // document.body.style.webkitUserSelect = 'none';
+    // Mantemos seleção para o usuário poder copiar trechos legítimos.
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+
   // ── Header scroll ──────────────────────────────────────
   const header = document.getElementById('site-header');
   if (header) {
@@ -82,21 +132,71 @@
   if (contactForm) {
     contactForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const btn  = contactForm.querySelector('[type="submit"]');
-      const data = new FormData(contactForm);
+      const btn = contactForm.querySelector('[type="submit"]');
+      const csrfInput = contactForm.querySelector('input[name="_csrf"]');
+      const originalBtnHtml = btn.innerHTML;
       btn.disabled = true;
       btn.textContent = 'Enviando…';
 
+      // Best-effort refresh do token (silencioso)
+      const refreshToken = async () => {
+        try {
+          const r = await fetch('/api/csrf-token.php', { credentials: 'same-origin', cache: 'no-store' });
+          if (!r.ok) return false;
+          const j = await r.json();
+          if (j && j.token && csrfInput) { csrfInput.value = j.token; return true; }
+        } catch (err) {
+          console.warn('[contact] csrf-token refresh falhou:', err);
+        }
+        return false;
+      };
+
+      // Wrapper de envio que SEMPRE tenta parsear JSON; se receber HTML/erro,
+      // captura o texto bruto pra log e devolve um objeto de erro estruturado.
+      const send = async () => {
+        const data = new FormData(contactForm);
+        let res;
+        try {
+          res = await fetch('/api/contact.php', { method: 'POST', body: data, credentials: 'same-origin' });
+        } catch (netErr) {
+          console.error('[contact] erro de rede:', netErr);
+          return { success: false, message: 'Erro de conexão. Verifique sua internet e tente de novo.' };
+        }
+        const text = await res.text();
+        try {
+          const parsed = JSON.parse(text);
+          parsed._status = res.status;
+          return parsed;
+        } catch (parseErr) {
+          console.error('[contact] resposta não-JSON do servidor (status', res.status, '):\n', text);
+          return {
+            success: false,
+            message: 'Resposta inesperada do servidor (' + res.status + '). Tente WhatsApp ou ligue diretamente.',
+            _status: res.status,
+            _rawSnippet: text.slice(0, 500),
+          };
+        }
+      };
+
       try {
-        const res  = await fetch('/api/contact.php', { method: 'POST', body: data });
-        const json = await res.json();
+        await refreshToken();
+        let json = await send();
+
+        // Retry uma vez em caso de "Sessão expirada"
+        if (!json.success && /sess/i.test(json.message || '')) {
+          console.info('[contact] CSRF falhou, retry com token novo');
+          await refreshToken();
+          json = await send();
+        }
+
         showNotif(json.message || 'Mensagem enviada!', json.success ? 'success' : 'error');
         if (json.success) contactForm.reset();
-      } catch {
-        showNotif('Erro ao enviar mensagem.', 'error');
+        if (!json.success) {
+          console.warn('[contact] falha:', json);
+        }
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Enviar Mensagem';
+        btn.innerHTML = originalBtnHtml;
       }
     });
   }

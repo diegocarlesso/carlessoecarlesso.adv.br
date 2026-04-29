@@ -15,12 +15,12 @@
     --c-navy:       #1a3554;
     --c-navy-light: #2d5a8e;
     --c-blue-light: #b8d4e8;
-    --c-cream:      #e8d5c0;
+    --c-cream:      #dbd9d3;
     --c-gray-light: #f0f2f4;
     --c-gray:       #c8c8c8;
     --c-text:       #1c1c1c;
     --c-text-muted: #6b7280;
-    --c-white:      #ffffff;
+    --c-white:      #fefefe;
 
     --f-serif:  'Hepta Slab', 'Georgia', serif;
     --f-sans:   'Open Sans', 'Helvetica Neue', sans-serif;
@@ -143,9 +143,9 @@ p  { margin-bottom: 1rem; }
 /* Navegação */
 .site-nav { display: flex; align-items: center; gap: 4px; }
 .site-nav a {
-    font-family: var(--f-sans);
+    font-family: var(--f-serif);
     font-size: .72rem;
-    font-weight: 600;
+    font-weight: 800;
     letter-spacing: .1em;
     text-transform: uppercase;
     color: rgba(255,255,255,.82);
@@ -212,7 +212,7 @@ p  { margin-bottom: 1rem; }
 }
 .header-social a {
     color: rgba(255,255,255,.7);
-    font-size: .95rem;
+    font-size: 1.5rem;
     transition: color var(--transition);
     line-height: 1;
 }
@@ -344,7 +344,7 @@ p  { margin-bottom: 1rem; }
     gap: 24px;
 }
 .service-card {
-    background: var(--c-white);
+    background: var(--c-cream);
     border: 1px solid rgba(82,112,149,.15);
     border-radius: var(--radius-lg);
     padding: 36px 28px;
@@ -629,7 +629,7 @@ p  { margin-bottom: 1rem; }
     align-items: center;
     justify-content: center;
     color: rgba(255,255,255,.7);
-    font-size: .9rem;
+    font-size: 1rem;
     transition: all var(--transition);
     text-decoration: none;
 }

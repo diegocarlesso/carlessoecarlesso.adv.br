@@ -18,18 +18,17 @@ $servicos = [
 ?>
 
 <!-- ═══ HERO ═══ -->
-<section class="hero">
+<section class="hero hero--split">
   <div class="hero-bg" aria-hidden="true"></div>
   <div class="hero-pattern" aria-hidden="true"></div>
 
-  <div class="container">
+  <div class="container hero-grid">
     <div class="hero-content">
 
       <div class="hero-eyebrow">
         <?= e($banner_subtitulo['conteudo'] ?? 'Atuação consolidada desde 2012') ?>
       </div>
 
-      <!-- H1 SIMPLES — apenas o título editável vindo do banco -->
       <h1>
         <?= e($banner_titulo['titulo'] ?? 'Excelência jurídica em São Miguel do Oeste') ?>
       </h1>
@@ -44,6 +43,11 @@ $servicos = [
         </a>
         <a href="/servicos" class="btn btn-outline">Nossos Serviços</a>
       </div>
+    </div>
+
+    <!-- Logo institucional grande no lado direito -->
+    <div class="hero-logo" aria-hidden="true">
+      <img src="/assets/images/logo_com_texto.png" alt="<?= e(getConfig('site_titulo', 'Carlesso & Carlesso')) ?>">
     </div>
   </div>
 </section>
@@ -155,7 +159,7 @@ if (!empty($recentPosts)):
           <div class="post-body">
             <div class="post-date"><?= dateFormat($post['data_publicacao'], 'd \d\e F \d\e Y') ?></div>
             <h3 class="post-title">
-              <a href="/producoes?post=<?= (int)$post['id'] ?>"><?= e($post['titulo']) ?></a>
+              <a href="/producoes/<?= e(!empty($post['slug']) ? $post['slug'] : $post['id']) ?>"><?= e($post['titulo']) ?></a>
             </h3>
             <p class="post-excerpt"><?= e(truncate(strip_tags($post['conteudo'] ?? ''), 130)) ?></p>
           </div>

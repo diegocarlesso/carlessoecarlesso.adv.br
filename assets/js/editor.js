@@ -185,31 +185,101 @@
     document.head.appendChild(s);
   }
 
+  // ── Selection persistence (módulo escopo) ──────────────────────────────
+  // Mapa: cada área editável guarda a última Range válida observada via
+  // 'selectionchange'. Antes de qualquer ação (cor, link, imagem, tabela),
+  // restauramos a Range salva. Garante que clique em botão/popover/modal
+  // não desfaz a seleção do usuário.
+  const editorSelectionMap = new WeakMap();
+
+  function registerSelectionTracking(area) {
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (area.contains(range.startContainer) && area.contains(range.endContainer)) {
+        editorSelectionMap.set(area, range.cloneRange());
+      }
+    });
+  }
+
+  function getSavedRange(area) {
+    return editorSelectionMap.get(area) || null;
+  }
+
+  function restoreSavedRange(area) {
+    const r = editorSelectionMap.get(area);
+    if (!r) {
+      area.focus();
+      return false;
+    }
+    area.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    try { sel.addRange(r); } catch (e) { return false; }
+    return true;
+  }
+
   // ── Color picker popover ────────────────────────────────────────────────
   function openColorPicker(anchor, onPick) {
     closeAllPopovers();
+    // IMPORTANTE: salva a Range agora — antes do popover possivelmente
+    // descartar a seleção. Mas o tracking via selectionchange já faz isso
+    // automaticamente; aqui apenas pegamos o snapshot atual.
+    const savedRange = saveCurrentRange();
+
+    function applyAndClose(color) {
+      restoreRange(savedRange);
+      onPick(color);
+      pop.remove();
+    }
+
     const grid = el('div', { class: 'le-color-grid' },
-      el('div', { class: 'le-color-cell no-color', title: 'Sem cor', onclick: () => { onPick(''); pop.remove(); } }),
+      el('div', { class: 'le-color-cell no-color', title: 'Sem cor',
+        onmousedown: e => e.preventDefault(),
+        onclick: () => applyAndClose('') }),
       ...PALETTE.map(c => el('div', {
         class: 'le-color-cell',
         style: { background: c },
         title: c,
-        onclick: () => { onPick(c); pop.remove(); }
+        onmousedown: e => e.preventDefault(),
+        onclick: () => applyAndClose(c)
       }))
     );
     const customInput = el('input', { type: 'color', value: '#1a3554',
-      oninput: e => onPick(e.target.value)
+      onmousedown: e => e.preventDefault(),
+      onchange: e => applyAndClose(e.target.value)
     });
     const custom = el('div', { class: 'le-color-custom' },
       el('span', null, 'Outra:'), customInput
     );
-    const pop = el('div', { class: 'le-popover' }, grid, custom);
+    const pop = el('div', { class: 'le-popover',
+      onmousedown: e => e.preventDefault() // impede o popover de roubar o foco
+    }, grid, custom);
     document.body.appendChild(pop);
     positionPopover(pop, anchor);
     setTimeout(() => document.addEventListener('mousedown', onOutside), 10);
     function onOutside(e) {
       if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('mousedown', onOutside); }
     }
+  }
+
+  function saveCurrentRange() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    return sel.getRangeAt(0).cloneRange();
+  }
+
+  function restoreRange(range) {
+    if (!range) return;
+    // Focus precisa preceder addRange em alguns browsers (Chrome notavelmente)
+    let host = range.startContainer;
+    while (host && host.nodeType === 3) host = host.parentNode;
+    while (host && !host.isContentEditable) host = host.parentNode;
+    if (host && typeof host.focus === 'function') host.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    try { sel.addRange(range); } catch (e) {}
   }
 
   function closeAllPopovers() {
@@ -226,16 +296,20 @@
   // ── Table picker popover ────────────────────────────────────────────────
   function openTablePicker(anchor, onPick) {
     closeAllPopovers();
+    const savedRange = saveCurrentRange();
     const ROWS = 8, COLS = 10;
     const cells = [];
-    const grid = el('div', { class: 'le-table-grid' });
+    const grid = el('div', { class: 'le-table-grid',
+      onmousedown: e => e.preventDefault()
+    });
     for (let r = 1; r <= ROWS; r++) {
       for (let c = 1; c <= COLS; c++) {
         const cell = el('div', {
           class: 'le-table-cell',
           'data-r': r, 'data-c': c,
           onmouseenter: () => paint(r, c),
-          onclick: () => { onPick(r, c); pop.remove(); }
+          onmousedown: e => e.preventDefault(),
+          onclick: () => { restoreRange(savedRange); onPick(r, c); pop.remove(); }
         });
         cells.push(cell);
         grid.appendChild(cell);
@@ -249,7 +323,9 @@
       });
       label.textContent = `${rr} × ${cc}`;
     }
-    const pop = el('div', { class: 'le-popover' }, label, grid);
+    const pop = el('div', { class: 'le-popover',
+      onmousedown: e => e.preventDefault()
+    }, label, grid);
     document.body.appendChild(pop);
     positionPopover(pop, anchor);
     setTimeout(() => document.addEventListener('mousedown', onOutside), 10);
@@ -360,7 +436,11 @@
         type: 'button',
         class: 'le-btn ' + (opts2.cls || ''),
         title: title,
-        onclick: () => onclick(b)
+        // CRÍTICO: previne o button de roubar foco do contenteditable.
+        // Sem isso, o navegador move o foco pra button no mousedown e
+        // a Range salva no contenteditable é perdida.
+        onmousedown: e => { e.preventDefault(); restoreSavedRange(area); },
+        onclick: () => { restoreSavedRange(area); onclick(b); }
       });
       b.innerHTML = label;
       return b;
@@ -369,7 +449,13 @@
       const s = el('select', {
         class: 'le-select ' + (opts2.cls || ''),
         title: title,
-        onchange: e => { onchange(e.target.value); e.target.selectedIndex = 0; area.focus(); }
+        // Restaura a seleção antes de aplicar — selects perdem foco do area
+        onmousedown: () => restoreSavedRange(area),
+        onchange: e => {
+          restoreSavedRange(area);
+          onchange(e.target.value);
+          e.target.selectedIndex = 0;
+        }
       });
       s.appendChild(el('option', { value: '' }, opts2.placeholder || '—'));
       items.forEach(it => {
@@ -445,14 +531,75 @@
     // Cores
     toolbar.appendChild(group(
       btn('<span>A</span><span class="swatch" style="color:#dc2626"></span>', 'Cor do texto',
-        b => openColorPicker(b, c => exec('foreColor', c || 'inherit')),
+        b => openColorPicker(b, c => applyColor('text', c)),
         { cls: 'icon-stack' }
       ),
       btn('<span>🖍</span><span class="swatch" style="color:#fde047"></span>', 'Cor de destaque',
-        b => openColorPicker(b, c => exec(c ? 'hiliteColor' : 'removeFormat', c)),
+        b => openColorPicker(b, c => applyColor('highlight', c)),
         { cls: 'icon-stack' }
       )
     ));
+
+    // Aplica cor com tratamento de "sem cor" e fallback hiliteColor → backColor.
+    // Wraps em <span style="color:..."> ou <span style="background:..."> para
+    // contornar comportamento errático do execCommand em browsers modernos
+    // (foreColor às vezes é ignorado se o fragment selecionado já tem cor).
+    function applyColor(kind, color) {
+      // Restaura a Range antes de aplicar — seleção pode ter sido perdida
+      // por clique no popover.
+      if (!restoreSavedRange(area)) return;
+
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+
+      if (range.collapsed) {
+        // Sem texto selecionado — não faz nada (evita aplicar cor "futura"
+        // que confunde o usuário). Avisa via console.
+        console.info('[editor] selecione texto antes de aplicar cor');
+        return;
+      }
+
+      // Wrap em <span> direto — funciona em 100% dos browsers modernos
+      const span = document.createElement('span');
+      if (kind === 'text') {
+        if (color) span.style.color = color;
+        else { /* sem cor: vai chamar removeFormat fallback abaixo */ }
+      } else {
+        if (color) span.style.backgroundColor = color;
+        else span.style.backgroundColor = 'transparent';
+      }
+
+      try {
+        if (color || kind === 'highlight') {
+          // surroundContents pode falhar se a seleção atravessa nós
+          range.surroundContents(span);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else {
+          // "Sem cor" no texto — usa execCommand removeFormat só nessa range
+          area.focus();
+          document.execCommand('removeFormat');
+        }
+      } catch (e) {
+        // Fallback: extractContents + insertNode
+        try {
+          const frag = range.extractContents();
+          span.appendChild(frag);
+          range.insertNode(span);
+          sel.removeAllRanges();
+          const newRange = document.createRange();
+          newRange.selectNodeContents(span);
+          sel.addRange(newRange);
+        } catch (e2) {
+          // Último fallback: execCommand
+          area.focus();
+          document.execCommand(kind === 'text' ? 'foreColor' : 'hiliteColor', false, color || 'inherit') ||
+            document.execCommand('backColor', false, color || 'transparent');
+        }
+      }
+      sync();
+    }
 
     // Listas + indent
     toolbar.appendChild(group(
@@ -508,9 +655,38 @@
       sync();
     }
 
-    function insertLink() {
+    // Helper: restaura range salva e executa insertHTML no ponto correto.
+    function insertHtmlAtSavedRange(html) {
+      restoreSavedRange(area);
       const sel = window.getSelection();
-      const selectedText = sel.toString();
+      if (sel.rangeCount === 0) {
+        // Sem range — append no fim do area
+        area.focus();
+        document.execCommand('insertHTML', false, html);
+      } else {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let lastNode;
+        while (tmp.firstChild) {
+          lastNode = frag.appendChild(tmp.firstChild);
+        }
+        range.insertNode(frag);
+        if (lastNode) {
+          range.setStartAfter(lastNode);
+          range.setEndAfter(lastNode);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+      sync();
+    }
+
+    function insertLink() {
+      const savedR = saveCurrentRange() || getSavedRange(area);
+      const selectedText = savedR ? savedR.toString() : '';
       openModal('Inserir link', [
         { name: 'url',    label: 'URL:',          type: 'url',  placeholder: 'https://' },
         { name: 'text',   label: 'Texto exibido:', type: 'text', value: selectedText },
@@ -520,7 +696,7 @@
         const target = v.target.toLowerCase().startsWith('s') ? '_blank' : '_self';
         const rel = target === '_blank' ? ' rel="noopener noreferrer"' : '';
         const text = v.text || v.url;
-        exec('insertHTML', `<a href="${escapeAttr(v.url)}" target="${target}"${rel}>${escapeHtml(text)}</a>`);
+        insertHtmlAtSavedRange(`<a href="${escapeAttr(v.url)}" target="${target}"${rel}>${escapeHtml(text)}</a>`);
       });
     }
 
@@ -530,7 +706,7 @@
         { name: 'alt', label: 'Texto alternativo (alt):', type: 'text' },
       ], v => {
         if (!v.url) return;
-        exec('insertHTML', `<img src="${escapeAttr(v.url)}" alt="${escapeAttr(v.alt || '')}" style="max-width:100%;height:auto">`);
+        insertHtmlAtSavedRange(`<img src="${escapeAttr(v.url)}" alt="${escapeAttr(v.alt || '')}" style="max-width:100%;height:auto">`);
       });
     }
 
@@ -544,16 +720,16 @@
         html += '</tr>';
       }
       html += '</tbody></table><p><br></p>';
-      exec('insertHTML', html);
+      insertHtmlAtSavedRange(html);
     }
 
     function insertCode() {
-      const sel = window.getSelection();
-      const text = sel.toString();
+      const savedR = getSavedRange(area);
+      const text = savedR ? savedR.toString() : '';
       if (text) {
-        exec('insertHTML', `<code>${escapeHtml(text)}</code>`);
+        insertHtmlAtSavedRange(`<code>${escapeHtml(text)}</code>`);
       } else {
-        exec('insertHTML', '<code>&nbsp;</code>');
+        insertHtmlAtSavedRange('<code>&nbsp;</code>');
       }
     }
 
@@ -669,6 +845,10 @@
     wrap.appendChild(source);
     wrap.appendChild(status);
     textarea.parentNode.insertBefore(wrap, textarea.nextSibling);
+
+    // Tracking contínuo de seleção (essencial para cor/link/imagem/tabela
+    // funcionarem mesmo após clique em outros elementos da toolbar).
+    registerSelectionTracking(area);
 
     updateStatus();
   }

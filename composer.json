@@ -1,0 +1,48 @@
+{
+    "name": "carlesso/cms",
+    "description": "Carlesso & Carlesso CMS - Sistema institucional refatorado (v2.0)",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*",
+        "ext-fileinfo": "*",
+        "ext-gd": "*",
+        "ext-zip": "*",
+        "ext-openssl": "*",
+        "ezyang/htmlpurifier": "^4.17",
+        "intervention/image": "^3.6",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Carlesso\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Carlesso\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "preferred-install": "dist"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "post-install-cmd": [
+            "@php -r \"echo 'Carlesso CMS v2.0 - vendor/ pronto. Suba para o servidor via FTP.' . PHP_EOL;\""
+        ]
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

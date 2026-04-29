@@ -108,7 +108,14 @@ $mapaLng   = getConfig('mapa_lng', '-53.5189');
   <div class="contact-form-wrap">
     <h2>Envie uma Mensagem</h2>
     <form class="contact-form" id="contact-form" novalidate>
-      <input type="hidden" name="_csrf" value="<?= e(\CSRF::generate()) ?>">
+      <!-- Token CSRF: usa HMAC stateless se disponível (Csrf.php v1.5+),
+           senão cai pro session-based (compat com Csrf.php antigo). -->
+      <?php
+        $csrfToken = method_exists('\CSRF', 'generateStateless')
+            ? \CSRF::generateStateless()
+            : \CSRF::generate();
+      ?>
+      <input type="hidden" name="_csrf" value="<?= e($csrfToken) ?>">
 
       <div class="form-group">
         <label for="cf-nome">Nome completo *</label>
@@ -121,8 +128,8 @@ $mapaLng   = getConfig('mapa_lng', '-53.5189');
       </div>
 
       <div class="form-group">
-        <label for="cf-telefone">Telefone</label>
-        <input type="tel" id="cf-telefone" name="telefone" placeholder="(49) 99999-9999" autocomplete="tel">
+        <label for="cf-telefone">Telefone *</label>
+        <input type="tel" id="cf-telefone" name="telefone" required placeholder="(49) 99999-9999" autocomplete="tel" pattern="[0-9()+\-\s]{8,20}" title="Informe um telefone válido (mínimo 8 dígitos)">
       </div>
 
       <div class="form-group">

@@ -30,7 +30,7 @@
   --c-navy:      #1a3554;
   --c-primary:   #527095;
   --c-accent:    #c8832a;
-  --c-cream:     #e8d5c0;
+  --c-cream:     #DBD9D3;
   --c-dark:      #1c1c1c;
   --c-white:     #ffffff;
   --c-text:      #1c1c1c;
@@ -307,7 +307,7 @@
 }
 .team-body { padding: 1.25rem; }
 .team-name { font-size: 1.2rem; margin: 0 0 .25em; color: var(--c-navy); }
-.team-role { color: var(--c-accent); font-weight: 600; margin: 0 0 .5em; font-size: .9rem; }
+.team-role { color: var(--c-accent); font-weight: 800; margin: 0 0 .5em; font-size: .9rem; }
 .team-oab  { color: #6b7280; font-size: .8rem; margin: 0 0 .75em; }
 .team-bio  { color: #4b5563; font-size: .9rem; line-height: 1.5; margin: 0 0 1em; }
 .team-email { color: var(--c-primary); text-decoration: none; font-size: .9rem; }

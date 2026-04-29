@@ -159,47 +159,52 @@ if ($action !== 'list') $breadcrumb[$pageTitle] = '';
 $tinymceLocal = file_exists(PUBLIC_PATH . '/assets/tinymce/tinymce.min.js');
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TinyMCE supercharged config (rev v1.5)
+// Editor scripts: TinyMCE 7 (se instalado) com fallback automático para
+// editor.js (lite Word-class). Ambos os textareas (.rich-editor) recebem
+// editor — o lite cede o elemento se o TinyMCE já tomou conta.
 // ═══════════════════════════════════════════════════════════════════════════
+$liteEditorVer = @filemtime(PUBLIC_PATH . '/assets/js/editor.js') ?: '1';
+
 if ($tinymceLocal) {
-    $mediaListJson = json_encode([], JSON_UNESCAPED_UNICODE); // populated via AJAX no Phase 4
     $extraScripts = <<<HTML
 <script src="/assets/tinymce/tinymce.min.js"></script>
 <script>
 (function() {
-  // Lista de fontes disponíveis (combina com Hepta Slab + Open Sans do site)
   const fonts = "Open Sans=Open Sans,Helvetica,Arial,sans-serif;"
               + "Hepta Slab=Hepta Slab,Georgia,serif;"
+              + "Calibri=Calibri,Trebuchet MS,sans-serif;"
+              + "Cambria=Cambria,Georgia,serif;"
               + "Georgia=Georgia,serif;"
               + "Times New Roman=Times New Roman,Times,serif;"
               + "Arial=Arial,Helvetica,sans-serif;"
               + "Verdana=Verdana,Geneva,sans-serif;"
-              + "Courier New=Courier New,Courier,monospace;"
-              + "Tahoma=Tahoma,Geneva,sans-serif;";
+              + "Tahoma=Tahoma,Geneva,sans-serif;"
+              + "Courier New=Courier New,Courier,monospace;";
 
-  tinymce.init({
-    selector: "#post-editor",
+  // Config compartilhada
+  const baseConfig = {
     language: "pt_BR",
-    height: 720,
-    min_height: 480,
-    menubar: "file edit view insert format tools table help",
     branding: false,
     promotion: false,
     license_key: "gpl",
     convert_urls: false,
     relative_urls: false,
     remove_script_host: false,
+    font_family_formats: fonts,
+    font_size_formats: "10px 11px 12px 14px 16px 18px 20px 24px 28px 32px 36px 48px 60px 72px",
+    content_css: ["/assets/css/style.css", "/assets/css/style-extras.css"],
+    content_style: "body{font-family:'Open Sans',Helvetica,sans-serif;font-size:16px;line-height:1.6;padding:20px;max-width:760px;margin:0 auto}h1,h2,h3,h4{font-family:'Hepta Slab',Georgia,serif;color:#1a3554}a{color:#c8832a}blockquote{border-left:4px solid #c8832a;padding-left:16px;color:#4b5563;font-style:italic;background:#faf7f2}",
+    paste_data_images: true,
+    smart_paste: true,
+  };
 
-    // Plugins community LGPL
-    plugins: [
-      "advlist", "anchor", "autolink", "autoresize", "autosave",
-      "charmap", "code", "codesample", "directionality", "emoticons",
-      "fullscreen", "help", "image", "importcss", "insertdatetime",
-      "link", "lists", "media", "nonbreaking", "pagebreak",
-      "preview", "quickbars", "save", "searchreplace", "table",
-      "visualblocks", "visualchars", "wordcount", "accordion"
-    ],
-
+  // Editor PRINCIPAL (Conteúdo) — toolbar Word completa
+  tinymce.init(Object.assign({}, baseConfig, {
+    selector: "#post-editor",
+    height: 720,
+    min_height: 480,
+    menubar: "file edit view insert format tools table help",
+    plugins: ["advlist","anchor","autolink","autoresize","autosave","charmap","code","codesample","directionality","emoticons","fullscreen","help","image","importcss","insertdatetime","link","lists","media","nonbreaking","pagebreak","preview","quickbars","save","searchreplace","table","visualblocks","visualchars","wordcount","accordion"],
     toolbar: [
       "undo redo | restoredraft | styles fontfamily fontsize | searchreplace",
       "bold italic underline strikethrough | forecolor backcolor removeformat | superscript subscript",
@@ -207,95 +212,46 @@ if ($tinymceLocal) {
       "link unlink anchor | image media table | hr pagebreak charmap emoticons",
       "ltr rtl | visualblocks visualchars | code preview fullscreen | help"
     ].join(" | "),
-
-    style_formats: [
-      { title: "Parágrafo",       format: "p" },
-      { title: "Título 1",        format: "h1" },
-      { title: "Título 2",        format: "h2" },
-      { title: "Título 3",        format: "h3" },
-      { title: "Título 4",        format: "h4" },
-      { title: "Citação",         format: "blockquote" },
-      { title: "Pré-formatado",   format: "pre" },
-      { title: "Destaque legal",  inline: "span", classes: "destaque-legal" },
-      { title: "Texto pequeno",   inline: "small" },
-    ],
-
-    font_family_formats: fonts,
-    font_size_formats: "12px 14px 16px 18px 20px 24px 28px 32px 36px",
-
-    // CSS aplicado dentro do editor para parecer com o front
-    content_css: ["/assets/css/style.css", "/assets/css/style-extras.css"],
-    content_style: "body { font-family: 'Open Sans', Helvetica, sans-serif; font-size: 16px; line-height: 1.6; padding: 20px; max-width: 760px; margin: 0 auto; } h1,h2,h3,h4 { font-family: 'Hepta Slab', Georgia, serif; color: #1a3554; } a { color: #c8832a; } blockquote { border-left: 4px solid #c8832a; padding-left: 16px; color: #4b5563; font-style: italic; }",
-
-    // Quickbars (selection toolbar + insert toolbar)
     quickbars_selection_toolbar: "bold italic underline | quicklink h2 h3 blockquote",
     quickbars_insert_toolbar: "image media table",
-
-    // Tabela
     table_toolbar: "tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol",
     table_default_styles: { width: "100%" },
-    table_class_list: [
-      { title: "Padrão",       value: "" },
-      { title: "Listrada",     value: "table-striped" },
-      { title: "Com bordas",   value: "table-bordered" },
-    ],
-
-    // Imagens
     image_advtab: true,
     image_caption: true,
-    image_title: true,
     image_dimensions: true,
     images_upload_url: "/api/upload.php",
     automatic_uploads: true,
-    file_picker_types: "image media file",
-
-    // Autosave (rascunho local — não envia ao server)
     autosave_ask_before_unload: true,
     autosave_interval: "30s",
     autosave_prefix: "carlesso-post-{path}{query}-",
-    autosave_restore_when_empty: false,
     autosave_retention: "30m",
-
-    // Code sample (citações de código de leis, dispositivos, etc.)
-    codesample_languages: [
-      { text: "Texto puro", value: "markup" },
-      { text: "JSON",       value: "json" },
-      { text: "SQL",        value: "sql" },
-      { text: "PHP",        value: "php" },
-      { text: "Diploma",    value: "markup" },
-    ],
-
-    // Atalhos extras
     setup: function(ed) {
-      ed.on("change keyup", function() { ed.save(); });
-      ed.addShortcut("meta+shift+s", "Salvar como rascunho", function() {
-        document.querySelector("[data-intent=save]")?.click();
-      });
-      ed.addShortcut("meta+shift+p", "Publicar", function() {
-        document.querySelector("[data-intent=publish]")?.click();
-      });
+      ed.on("change keyup", () => ed.save());
+      ed.addShortcut("meta+shift+s", "Salvar", () => document.querySelector("[data-intent=save]")?.click());
+      ed.addShortcut("meta+shift+p", "Publicar", () => document.querySelector("[data-intent=publish]")?.click());
     },
+  }));
 
-    // Word count visível por padrão
-    statusbar: true,
-    elementpath: true,
-    resize: true,
-
-    // Paste comportamento limpo (sem lixo do Word)
-    paste_data_images: true,
-    paste_block_drop: false,
-    smart_paste: true,
-  });
+  // Editor RESUMO — toolbar reduzida, altura menor
+  tinymce.init(Object.assign({}, baseConfig, {
+    selector: "#post-resumo",
+    height: 180,
+    min_height: 140,
+    menubar: false,
+    statusbar: false,
+    plugins: ["link","lists","autolink","wordcount","searchreplace","charmap"],
+    toolbar: "bold italic underline strikethrough | forecolor backcolor | bullist numlist | link unlink | removeformat",
+    setup: function(ed) {
+      ed.on("change keyup", () => ed.save());
+    },
+  }));
 })();
 </script>
+<script src="/assets/js/editor.js?v={$liteEditorVer}" defer></script>
 HTML;
 } else {
     $extraScripts = <<<HTML
-<script src="/assets/js/editor.js" defer></script>
-<div class="alert alert-yellow" style="margin-bottom:14px">
-  ⚠️ TinyMCE não está instalado. Editor lite ativo (funcional, mas limitado).
-  <a href="/admin/install-tinymce.php" style="color:inherit;text-decoration:underline">Instalar TinyMCE 7</a> para experiência profissional.
-</div>
+<script src="/assets/js/editor.js?v={$liteEditorVer}" defer></script>
 HTML;
 }
 
@@ -374,7 +330,7 @@ if ($action === 'list'): ?>
           <td>
             <div style="display:flex;gap:6px">
               <?php if ($p['status'] === 'publicado'): ?>
-                <a href="/?slug=producoes&post=<?= $p['id'] ?>" target="_blank" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem" title="Visualizar no site">
+                <a href="/producoes/<?= e(!empty($p['slug']) ? $p['slug'] : $p['id']) ?>" target="_blank" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem" title="Visualizar no site">
                   <span class="i i-eye"></span>
                 </a>
               <?php endif; ?>
@@ -445,9 +401,9 @@ elseif (in_array($action, ['new', 'edit'])): ?>
       <div class="card">
         <div class="card-header"><h3>Resumo / Chamada</h3></div>
         <div class="card-body">
-          <textarea class="form-textarea" name="resumo" rows="3" maxlength="500"
+          <textarea id="post-resumo" class="rich-editor" name="resumo" rows="3" maxlength="500"
+                    data-compact="1"
                     placeholder="Resumo curto que aparece nas listagens e em compartilhamentos sociais (até 500 caracteres)."><?= e($post['resumo'] ?? '') ?></textarea>
-          <div class="form-hint" id="resumo-counter">0 / 500</div>
         </div>
       </div>
 
@@ -460,7 +416,9 @@ elseif (in_array($action, ['new', 'edit'])): ?>
           </span>
         </div>
         <div class="card-body" style="padding:0">
-          <textarea id="post-editor" name="conteudo" style="min-height:480px;width:100%;border:none;padding:16px"><?= e($post['conteudo'] ?? '') ?></textarea>
+          <textarea id="post-editor" class="rich-editor" name="conteudo"
+                    data-upload-url="/api/upload.php"
+                    style="min-height:480px;width:100%;border:none;padding:16px"><?= e($post['conteudo'] ?? '') ?></textarea>
         </div>
       </div>
     </div>
@@ -530,15 +488,17 @@ elseif (in_array($action, ['new', 'edit'])): ?>
       <div class="card">
         <div class="card-header"><h3>Imagem de Capa</h3></div>
         <div class="card-body">
-          <?php if (!empty($post['imagem'])): ?>
-            <img src="<?= e($post['imagem']) ?>" alt="Capa atual" style="width:100%;border-radius:6px;margin-bottom:12px">
-            <input type="hidden" name="imagem" value="<?= e($post['imagem']) ?>" id="imagem-current">
-          <?php else: ?>
-            <input type="hidden" name="imagem" value="" id="imagem-current">
-          <?php endif; ?>
+          <div id="capa-preview-wrap" style="margin-bottom:12px; <?= empty($post['imagem']) ? 'display:none' : '' ?>">
+            <img id="capa-preview" src="<?= e($post['imagem'] ?? '') ?>" alt="Capa selecionada"
+                 style="width:100%;border-radius:6px;display:block">
+            <button type="button" id="capa-remove" class="topbar-btn outline" style="margin-top:8px;width:100%;justify-content:center;color:#dc2626;font-size:.78rem">
+              ✕ Remover capa
+            </button>
+          </div>
+          <input type="hidden" name="imagem" value="<?= e($post['imagem'] ?? '') ?>" id="imagem-current">
 
           <?php if ($canMed): ?>
-            <label class="form-label">Substituir imagem</label>
+            <label class="form-label">Enviar nova imagem</label>
             <input class="form-input" type="file" name="capa" accept="image/jpeg,image/png,image/webp">
             <div class="form-hint">JPG, PNG ou WEBP. Máx. 5MB. Proporção sugerida 16:9.</div>
             <button type="button" class="topbar-btn outline" style="margin-top:10px;width:100%;justify-content:center"
@@ -606,15 +566,7 @@ elseif (in_array($action, ['new', 'edit'])): ?>
   });
 })();
 
-// ─── Resumo counter ──────────────────────────────────────────────
-(function() {
-  const ta = document.querySelector('textarea[name=resumo]');
-  const counter = document.getElementById('resumo-counter');
-  if (!ta || !counter) return;
-  const update = () => { counter.textContent = ta.value.length + ' / 500'; };
-  ta.addEventListener('input', update);
-  update();
-})();
+// ─── (Resumo counter removido — o editor rico já mostra o contador embutido) ───
 
 // ─── Confirm dialogs nos botões com data-confirm ─────────────────
 document.querySelectorAll('[data-confirm]').forEach(btn => {
@@ -624,7 +576,27 @@ document.querySelectorAll('[data-confirm]').forEach(btn => {
 });
 
 // ─── Media picker ────────────────────────────────────────────────
+// IMPORTANTE: NÃO recarrega a página — só atualiza o preview e o hidden input.
+// Isso preserva conteúdo não salvo do editor.
 let mediaLoaded = false;
+
+function setCoverImage(url) {
+  document.getElementById('imagem-current').value = url || '';
+  const wrap = document.getElementById('capa-preview-wrap');
+  const img  = document.getElementById('capa-preview');
+  if (url) {
+    img.src = url;
+    wrap.style.display = 'block';
+  } else {
+    img.src = '';
+    wrap.style.display = 'none';
+  }
+}
+
+document.getElementById('capa-remove')?.addEventListener('click', () => {
+  if (confirm('Remover a imagem de capa?')) setCoverImage('');
+});
+
 function openMediaPicker() {
   const modal = document.getElementById('media-picker-modal');
   modal.style.display = 'flex';
@@ -634,19 +606,20 @@ function openMediaPicker() {
     .then(data => {
       const grid = document.getElementById('media-grid');
       if (!data.success || !data.media || !data.media.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#9ca3af">Nenhuma imagem na biblioteca.</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#9ca3af">Nenhuma imagem na biblioteca. Faça upload em Mídia primeiro.</div>';
         return;
       }
       grid.innerHTML = data.media.map(m =>
-        `<button type="button" class="media-item" data-url="${m.file_path}" style="border:2px solid #e5e9ef;border-radius:6px;padding:0;cursor:pointer;background:#f9fafb;aspect-ratio:1;overflow:hidden">
+        `<button type="button" class="media-item" data-url="${m.file_path}"
+            title="${(m.original_name || m.filename || '').replace(/"/g, '&quot;')}"
+            style="border:2px solid #e5e9ef;border-radius:6px;padding:0;cursor:pointer;background:#f9fafb;aspect-ratio:1;overflow:hidden">
           <img src="${m.file_path}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
         </button>`
       ).join('');
       grid.querySelectorAll('.media-item').forEach(b => {
         b.addEventListener('click', () => {
-          document.getElementById('imagem-current').value = b.dataset.url;
+          setCoverImage(b.dataset.url);
           closeMediaPicker();
-          location.reload();
         });
       });
       mediaLoaded = true;

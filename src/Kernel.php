@@ -186,6 +186,22 @@ final class Kernel
             ini_set('display_errors', '1');
             error_reporting(E_ALL);
         }
+
+        // Sessão: estende lifetime para evitar "sessão expirada" em formulários
+        // que ficam abertos por tempo (form de contato, edição de produção, etc.)
+        // SESSION_LIFETIME do .env (default 7200 = 2h).
+        $lifetime = (int) self::env('SESSION_LIFETIME', 7200);
+        if ($lifetime > 0 && session_status() === PHP_SESSION_NONE) {
+            ini_set('session.gc_maxlifetime', (string) $lifetime);
+            ini_set('session.cookie_lifetime', (string) $lifetime);
+            // Cookie 'lax' funciona em forms first-party (incluindo AJAX same-origin)
+            // sem quebrar redirects pós-OAuth no admin.
+            ini_set('session.cookie_samesite', 'Lax');
+            ini_set('session.cookie_httponly', '1');
+            if (!empty($_SERVER['HTTPS'])) {
+                ini_set('session.cookie_secure', '1');
+            }
+        }
     }
 
     private static function env(string $key, mixed $default = null): mixed

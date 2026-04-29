@@ -1,7 +1,10 @@
 Options -Indexes
 
-# Apenas endpoints conhecidos
-<FilesMatch "^(?!upload|media|contact).*\.php$">
+# Allowlist de endpoints PHP permitidos no /api/ (e subdiretórios).
+# IMPORTANTE: FilesMatch aqui aplica a /api/ E /api/*/. Por isso load/save/render
+# do builder também precisam constar — senão o /api/builder/.htaccess
+# nem chega a rodar (deny do pai vence).
+<FilesMatch "^(?!upload\.php$|media\.php$|contact\.php$|csrf-token\.php$|csp-report\.php$|test-mail\.php$|load\.php$|save\.php$|render\.php$).*\.php$">
     Order allow,deny
     Deny from all
 </FilesMatch>

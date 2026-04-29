@@ -162,7 +162,10 @@ if ($action === 'list'): ?>
               <a href="/?slug=<?= e($pg['slug']) ?>" target="_blank" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem" title="Visualizar">
                 <span class="i i-eye"></span>
               </a>
-              <a href="/admin/paginas.php?action=edit&id=<?= $pg['id'] ?>" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem">
+              <a href="/admin/builder.php?page_id=<?= $pg['id'] ?>" class="topbar-btn primary" style="padding:4px 10px;font-size:.72rem" title="Editor Visual">
+                ⚡ Builder
+              </a>
+              <a href="/admin/paginas.php?action=edit&id=<?= $pg['id'] ?>" class="topbar-btn outline" style="padding:4px 8px;font-size:.72rem" title="Editar (formulário)">
                 <span class="i i-pencil"></span>
               </a>
               <?php if (Auth::can('pages.delete')): ?>

@@ -7,12 +7,27 @@ $introducao = getContent('producoes', 'introducao');
 $posts      = getPublishedPosts(50);
 $singlePost = null;
 
-// Visualização de post individual
+// Visualização de post individual — aceita slug (preferido) OU id numérico (compat).
 if (!empty($_GET['post'])) {
-    $singlePost = Database::fetchOne(
-        'SELECT * FROM postagens WHERE id = ? AND status = "publicado"',
-        [(int)$_GET['post']]
-    );
+    $key = trim((string) $_GET['post']);
+    if (ctype_digit($key)) {
+        // Numérico: busca por ID (links antigos /producoes?post=2)
+        $singlePost = Database::fetchOne(
+            'SELECT * FROM postagens WHERE id = ? AND status = "publicado"',
+            [(int) $key]
+        );
+    } else {
+        // Texto: busca por slug — URL amigável /producoes/slug-do-post
+        $singlePost = Database::fetchOne(
+            'SELECT * FROM postagens WHERE slug = ? AND status = "publicado" LIMIT 1',
+            [$key]
+        );
+    }
+    // Redirect 301 de id → slug se a URL veio por ?post=ID e o post tem slug
+    if ($singlePost && ctype_digit($key) && !empty($singlePost['slug'])) {
+        header('Location: /producoes/' . $singlePost['slug'], true, 301);
+        exit;
+    }
 }
 ?>
 
@@ -68,12 +83,12 @@ if (!empty($_GET['post'])) {
           <div class="post-body">
             <div class="post-date"><?= dateFormat($post['data_publicacao'], 'd \d\e F \d\e Y') ?></div>
             <h3 class="post-title">
-              <a href="/producoes?post=<?= (int)$post['id'] ?>"><?= e($post['titulo']) ?></a>
+              <a href="/producoes/<?= e(!empty($post['slug']) ? $post['slug'] : $post['id']) ?>"><?= e($post['titulo']) ?></a>
             </h3>
             <p class="post-excerpt">
               <?= e(truncate(strip_tags($post['conteudo'] ?? ''), 160)) ?>
             </p>
-            <a href="/producoes?post=<?= (int)$post['id'] ?>" class="post-link">Ler completo →</a>
+            <a href="/producoes/<?= e(!empty($post['slug']) ? $post['slug'] : $post['id']) ?>" class="post-link">Ler completo →</a>
           </div>
         </article>
       <?php endforeach; ?>

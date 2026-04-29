@@ -7,7 +7,10 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-Auth::requireCan('settings.manage');
+// Mensagens visíveis a TODOS os usuários logados (independente de role/permissão).
+// Decisão de produto: o escritório quer que qualquer pessoa do staff possa ver
+// e responder leads que chegam pelo site.
+Auth::requireLogin();
 
 // Marcar como lido
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_read'])) {

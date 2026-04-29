@@ -4,10 +4,13 @@ if (!defined('CARLESSO_CMS')) exit;
 $historia = getContent('escritorio', 'historia');
 ?>
 
-<div id="historia" class="history-text">
-  <h2><?= e($historia['titulo'] ?? 'Nossa História') ?></h2>
-  <div class="gold-divider"></div>
+<!-- Faixa: NOSSA HISTÓRIA (mesmo padrão de Equipe/Fundamentos) -->
+<div class="section-bar">
+  <h2><?= e(strtoupper($historia['titulo'] ?? 'NOSSA HISTÓRIA')) ?></h2>
+</div>
+<div class="section-bar-line"></div>
 
+<article class="fundamento-card fundamento-card--full" id="historia">
   <?php if (!empty($historia['conteudo'])): ?>
     <div class="rich-content"><?= sanitizeHtml($historia['conteudo']) ?></div>
   <?php else: ?>
@@ -16,28 +19,5 @@ $historia = getContent('escritorio', 'historia');
     <p>Posteriormente, em meio às transformações impostas pelo cenário da pandemia, ocorreram novas mudanças societárias, culminando com a saída dos sócios Nelita Muller e Jhyonnattann C. Ganzer. Assim, em 24 de agosto de 2021, consolidou-se a atual estrutura sob a denominação – Carlesso e Carlesso Advogados Associados, marca que representa, até hoje, a identidade e os valores do escritório.</p>
     <p>Nosso trabalho valoriza o respeito com cada pessoa que chega até nós. Confiança, sigilo e zelo nos processos, são fundamentos que priorizamos.</p>
   <?php endif; ?>
-</div>
+</article>
 
-<!-- Stats institucionais -->
-<div class="institutional-stats">
-  <div class="stat">
-    <div class="stat-icon"><?= svgIcon('calendar') ?></div>
-    <div class="stat-num">2012</div>
-    <div class="stat-label">Ano de fundação</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon"><?= svgIcon('briefcase') ?></div>
-    <div class="stat-num">04</div>
-    <div class="stat-label">Áreas de atuação</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon"><?= svgIcon('pin') ?></div>
-    <div class="stat-num">SMO</div>
-    <div class="stat-label">São Miguel do Oeste / SC</div>
-  </div>
-  <div class="stat">
-    <div class="stat-icon"><?= svgIcon('shield') ?></div>
-    <div class="stat-num">Sigilo</div>
-    <div class="stat-label">Em cada atendimento</div>
-  </div>
-</div>

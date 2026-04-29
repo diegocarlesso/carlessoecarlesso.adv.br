@@ -64,43 +64,79 @@ final class HtmlSanitizer
         }
         $config->set('Cache.SerializerPath', $cacheDir);
 
-        // Tags permitidas — superset do antigo + tags HTML5 modernas
+        // Tags permitidas — formatting tags ganham [style] para preservar
+        // cor, alinhamento, fonte, tamanho aplicados pelo editor (TipTap/TinyMCE/lite).
+        // <font> legacy aceito para compatibilidade com execCommand do navegador.
         $config->set('HTML.Allowed',
-            'p,br,strong,em,u,s,'
-          . 'h1,h2,h3,h4,h5,h6,'
-          . 'ul,ol,li,'
-          . 'a[href|target|rel|class],'
-          . 'img[src|alt|width|height|loading|class|srcset|sizes],'
-          . 'figure[class],figcaption,'
+            'p[style|align|class],br,'
+          . 'strong[style],em[style],u[style],s[style],b[style],i[style],'
+          . 'h1[style|align|class],h2[style|align|class],h3[style|align|class],'
+          . 'h4[style|align|class],h5[style|align|class],h6[style|align|class],'
+          . 'ul[style|class],ol[style|class|start|type],li[style|class|value],'
+          . 'a[href|target|rel|class|style|title],'
+          . 'img[src|alt|width|height|loading|class|srcset|sizes|style],'
+          . 'figure[class|style],figcaption[class|style],'
           . 'picture,source[srcset|type|sizes|media],'
-          . 'video[src|controls|width|height|poster|loop|muted|autoplay],'
-          . 'audio[src|controls|loop],'
-          . 'blockquote,table,thead,tbody,tr,th,td,'
-          . 'span[class],div[class],'
-          . 'hr,sub,sup,pre,code'
+          . 'video[src|controls|width|height|poster|loop|muted|autoplay|class|style],'
+          . 'audio[src|controls|loop|class],'
+          . 'blockquote[style|cite|class],'
+          . 'table[style|class|border|cellpadding|cellspacing|width],'
+          . 'thead[style|class],tbody[style|class],tfoot[style|class],'
+          . 'tr[style|class],'
+          . 'th[style|class|colspan|rowspan|scope|width|align|valign],'
+          . 'td[style|class|colspan|rowspan|width|align|valign],'
+          . 'span[class|style],div[class|style|align],'
+          . 'hr[style|class],sub[style],sup[style],'
+          . 'pre[style|class],code[style|class],'
+          . 'mark[style],small[style],kbd[style],samp[style],var[style],'
+          . 'font[color|face|size]'
         );
 
-        // Permite alvos comuns em links
+        // Whitelist de propriedades CSS — só formatação visual segura.
+        // BLOQUEADO automaticamente: position, javascript:, expression(), behavior, etc.
+        $config->set('CSS.AllowedProperties', [
+            // Cor & background
+            'color', 'background-color', 'background',
+            // Texto & fonte
+            'font-family', 'font-size', 'font-weight', 'font-style', 'font-variant',
+            'text-align', 'text-decoration', 'text-transform', 'text-indent',
+            'line-height', 'letter-spacing', 'word-spacing', 'white-space',
+            'vertical-align',
+            // Box model (limitado)
+            'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+            'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'width', 'max-width', 'min-width',
+            'height', 'max-height', 'min-height',
+            // Border (limitado)
+            'border', 'border-color', 'border-style', 'border-width', 'border-radius',
+            'border-top', 'border-right', 'border-bottom', 'border-left',
+            'border-collapse', 'border-spacing',
+            // Display básico (sem position absoluta etc.)
+            'display', 'float', 'clear',
+            'list-style', 'list-style-type', 'list-style-position',
+        ]);
+        $config->set('CSS.AllowTricky', false); // sem expression(), url(javascript:), etc.
+
+        // Aceita 'align' attr em block elements (Word/legacy)
         $config->set('Attr.AllowedFrameTargets', ['_blank', '_self', '_parent', '_top']);
-        // Adiciona rel="noopener noreferrer" automaticamente em links com target=_blank
         $config->set('HTML.TargetBlank', true);
 
-        // URI: bloqueia javascript: e data:; permite data:image/* via filtro custom abaixo
+        // URIs permitidas
         $config->set('URI.AllowedSchemes', [
-            'http'   => true,
-            'https'  => true,
-            'mailto' => true,
-            'tel'    => true,
-            'data'   => true, // restringido ao filtro abaixo
+            'http' => true, 'https' => true,
+            'mailto' => true, 'tel' => true,
+            'data' => true, // restrita a images via filter custom
         ]);
-        // Bloqueia data: para tudo exceto src/href de imagens
-        $config->set('URI.DisableExternalResources', false);
 
-        // Define atributos data-* e aria-* permitidos via HTMLDefinition
+        // Define atributos data-* e aria-* nas tags relevantes.
+        // DefinitionID/Rev força regeneração do cache quando mudamos a config.
+        // Bumpar Rev sempre que alterar este bloco.
+        $config->set('HTML.DefinitionID', 'carlesso-cms-formatting');
+        $config->set('HTML.DefinitionRev', 3);
         $def = $config->getHTMLDefinition(true);
-        $allowedAttrs = ['data-id', 'data-block', 'aria-label', 'aria-hidden', 'aria-describedby', 'role'];
-        foreach (['p', 'div', 'span', 'a', 'img', 'figure', 'section', 'article'] as $tag) {
-            foreach ($allowedAttrs as $attr) {
+        $extraAttrs = ['data-id', 'data-block', 'aria-label', 'aria-hidden', 'aria-describedby', 'role', 'title'];
+        foreach (['p', 'div', 'span', 'a', 'img', 'figure', 'section', 'article', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as $tag) {
+            foreach ($extraAttrs as $attr) {
                 if ($def->info[$tag] ?? null) {
                     $def->info[$tag]->attr[$attr] = new \HTMLPurifier_AttrDef_Text();
                 }
@@ -112,19 +148,30 @@ final class HtmlSanitizer
     }
 
     /**
-     * Fallback regex (idêntico ao sanitizeHtml() legacy) para quando
-     * HTMLPurifier não está disponível.
+     * Fallback regex usado quando HTMLPurifier não está disponível (composer
+     * install não rodou ainda). Mais permissivo que o legacy — preserva
+     * style="...", <font>, align, colspan/rowspan — pra não perder formatação.
+     * Bloqueia o que importa: <script>, on*=, javascript:, expression(),
+     * data: não-imagem, e tags potencialmente perigosas (iframe/object/embed).
      */
     private static function fallback(string $html): string
     {
-        $allowed = '<p><br><strong><em><u><s><ul><ol><li><h1><h2><h3><h4><h5><h6>'
-            . '<a><img><blockquote><table><thead><tbody><tr><th><td><span><div>'
-            . '<figure><figcaption><hr><sub><sup><pre><code>'
-            . '<picture><source><video><audio>';
+        $allowed = '<p><br><strong><em><u><s><b><i><ul><ol><li><h1><h2><h3><h4><h5><h6>'
+            . '<a><img><blockquote><table><thead><tbody><tfoot><tr><th><td>'
+            . '<span><div><figure><figcaption><hr><sub><sup><pre><code>'
+            . '<picture><source><video><audio><font><mark><small><kbd><samp><var>';
         $clean = strip_tags($html, $allowed);
-        $clean = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/i', '', $clean);
+
+        // Remove handlers JS inline (on*=)
+        $clean = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^>\s]+)/i', '', $clean);
+
+        // Remove javascript: e expression() em qualquer atributo
         $clean = preg_replace('/javascript\s*:/i', '', $clean);
-        // Bloqueia data: exceto data:image/{png,jpeg,gif,webp,svg+xml}
+        $clean = preg_replace('/expression\s*\(/i', '', $clean);
+        $clean = preg_replace('/behavior\s*:/i', '', $clean);
+        $clean = preg_replace('/-moz-binding\s*:/i', '', $clean);
+
+        // data: URIs apenas para imagens em src
         $clean = preg_replace_callback(
             '/\b(href|src)\s*=\s*(["\'])\s*data:([^"\']*)\2/i',
             static function (array $m): string {
@@ -135,6 +182,7 @@ final class HtmlSanitizer
             },
             $clean
         );
+
         return $clean;
     }
 }

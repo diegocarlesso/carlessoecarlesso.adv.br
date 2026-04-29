@@ -3,64 +3,280 @@
    Carrega DEPOIS de style.css. Sobrescreve quando necessário.
 ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. Header com logo que encolhe ao scroll ──────────────── */
+/* ── 1. Header — logo GRANDE no topo, encolhe muito ao scroll ────── */
 #site-header {
-  height: 110px;
+  height: 160px;            /* TOPO: bem alto */
   transition: height .3s ease, background .3s ease, box-shadow .3s ease, padding .3s ease;
-  padding: 8px 0;
+  padding: 12px 0;
+  background: linear-gradient(180deg, rgba(26,53,84,.92) 0%, rgba(26,53,84,.78) 100%) !important;
+  overflow: hidden;          /* Impede botões da nav transbordarem */
+}
+/* O .header-inner do style.css tem height: var(--header-h) fixa que não
+   acompanha a altura nova do header. Forço a herdar 100% pra centralizar
+   tudo corretamente em qualquer estado. */
+.header-inner {
+  height: 100% !important;
 }
 #site-header.scrolled {
-  height: 64px;
+  height: 64px;             /* SCROLL: compact, igual à imagem 3 */
   padding: 4px 0;
-  background: rgba(8, 18, 23, .97) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  background: linear-gradient(180deg, rgba(26,53,84,.92) 0%, rgba(26,53,84,.78) 100%) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,.30);
 }
 
-/* Logo (com texto) - tamanho grande no topo, encolhe ao scroll */
+/* Logo: ENORME no topo (destaque), miniaturizada no scroll */
 .site-logo {
   display: flex;
   align-items: center;
   gap: 12px;
   text-decoration: none;
   transition: transform .3s ease;
+  position: relative;
+}
+/* Halo radial atrás do logo do header — encolhe junto no scroll */
+.site-logo::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.14) 25%,
+    rgba(255, 255, 255, 0.06) 45%,
+    transparent 70%
+  );
+  filter: blur(10px);
+  z-index: 0;
+  pointer-events: none;
+  transition: width .3s ease, height .3s ease, opacity .3s ease;
+}
+#site-header.scrolled .site-logo::before {
+  width: 110px;
+  height: 110px;
+  opacity: .65;
+}
+.site-logo .logo-full,
+.site-logo .logo-mark {
+  position: relative;
+  z-index: 1;
 }
 .site-logo .logo-full {
-  height: 78px;            /* Topo: GRANDE */
+  height: 130px;            /* TOPO: GRANDE — destaque institucional */
   width: auto;
-  filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  /* Cores originais do logo preservadas; só sombra para legibilidade no header */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
   transition: height .3s ease, filter .3s ease;
   display: block;
 }
-.site-logo .logo-mark {
-  display: none;
-}
+.site-logo .logo-mark { display: none; }
 #site-header.scrolled .logo-full {
-  height: 42px;            /* Scrolled: COMPACTO */
+  height: 80px;             /* SCROLL: compacto */
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
 }
 
-/* Mobile: troca para logo sem texto */
+/* Mobile: troca para logo-mark, mas ainda grande no topo */
 @media (max-width: 920px) {
-  #site-header { height: 72px; padding: 4px 0; }
+  #site-header { height: 110px; padding: 6px 0; }
   #site-header.scrolled { height: 56px; }
   .site-logo .logo-full { display: none; }
   .site-logo .logo-mark {
     display: block;
-    height: 50px;
+    height: 120px;
     width: auto;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,.4));
     transition: height .3s ease;
   }
-  #site-header.scrolled .logo-mark { height: 38px; }
+  #site-header.scrolled .logo-mark { height: 40px; }
+  /* Halo proporcional ao logo-mark mobile */
+  .site-logo::before { width: 140px; height: 140px; }
+  #site-header.scrolled .site-logo::before { width: 70px; height: 70px; }
 }
 
-/* Nav links — adapta ao scroll */
+/* Nav links — sempre legíveis; encolhem suavemente no scroll */
 .site-nav a {
   transition: font-size .25s ease, color .2s ease;
+  font-size: .92rem;
 }
-#site-header.scrolled .site-nav a {
-  font-size: .82rem;
+#site-header.scrolled .site-nav a { font-size: .82rem; }
+
+/* Hero com mais respiro embaixo do header maior */
+.hero { padding-top: 180px !important; }
+@media (max-width: 920px) { .hero { padding-top: 130px !important; } }
+
+/* Page-header (páginas internas) — breadcrumb não pode ficar atrás do header */
+.page-header { padding-top: 180px !important; padding-bottom: 60px; }
+@media (max-width: 920px) { .page-header { padding-top: 130px !important; padding-bottom: 40px; } }
+
+/* ── Ícones sociais coloridos (cores oficiais das marcas) ──────────── */
+.header-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.95);
+  margin-left: 6px;
+  transition: transform .2s ease, box-shadow .2s ease;
+  text-decoration: none;
+}
+.header-social a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+.header-social a .i {
+  font-size: 1.1rem;
+  width: 1.1em;
+  height: 1.1em;
+}
+.header-social a .i-facebook  { background-color: #1877F2; }
+.header-social a .i-whatsapp  { background-color: #25D366; }
+.header-social a .i-linkedin  { background-color: #0A66C2; }
+/* Instagram usa gradient (mask-image suporta background-image em vez de color) */
+.header-social a .i-instagram {
+  background-color: transparent;
+  background-image: linear-gradient(45deg,
+    #f09433 0%, #e6683c 20%, #dc2743 45%, #cc2366 70%, #bc1888 100%);
+}
+@media (max-width: 920px) {
+  .header-social a { width: 32px; height: 32px; }
+}
+
+/* ── Padronização de Escritório/Serviços (mesmo visual de Fundamentos) ── */
+/* Lista de tópicos dentro do fundamento-card (usada em Serviços) */
+.fundamento-card .service-topics {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.fundamento-card .service-topics li {
+  position: relative;
+  padding: 6px 0 6px 22px;
+  color: var(--c-text);
+  font-size: .92rem;
+  line-height: 1.55;
+  border-bottom: 1px solid rgba(200,131,42,.15);
+}
+.fundamento-card .service-topics li:last-child { border-bottom: none; }
+.fundamento-card .service-topics li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 16px;
+  width: 8px; height: 8px;
+  background: var(--c-gold, #c8832a);
+  border-radius: 50%;
+}
+
+/* Rich content (texto institucional) dentro de cards full-width — Escritório/Nossa História */
+.fundamento-card--full .rich-content {
+  font-size: 1.1rem;
+}
+.fundamento-card--full .rich-content p {
+  margin: 0 0 1.1em;
+  line-height: 1.85;
+  color: var(--c-text);
+  font-size: 1.1rem;
+}
+.fundamento-card--full .rich-content p:last-child { margin-bottom: 0; }
+.fundamento-card--full .rich-content strong { color: var(--c-navy, #1a3554); }
+@media (max-width: 768px) {
+  .fundamento-card--full .rich-content,
+  .fundamento-card--full .rich-content p { font-size: 1rem; }
+}
+
+/* CTA inline (Serviços) — fundo cream + borda gold pra ficar consistente */
+.services-cta {
+  text-align: center;
+  background: var(--c-cream, #DBD9D3);
+  border: 1px solid rgba(200,131,42,.25);
+  border-radius: 12px;
+  padding: 36px 24px;
+  margin-top: 32px;
+}
+.services-cta h3 {
+  font-family: var(--f-serif, Georgia, serif);
+  color: var(--c-navy, #1a3554);
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+}
+.services-cta p {
+  color: var(--c-text);
+  margin: 0 0 18px;
+  font-size: .95rem;
+}
+
+/* ── Hero split: texto à esquerda + logo grande à direita ─────────── */
+.hero--split .hero-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 48px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+.hero--split .hero-content {
+  /* anula override de .hero-content centralizada do style.css padrão */
+  text-align: left;
+  max-width: none;
+}
+.hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+/* Halo radial — luminosidade saindo do centro do logo */
+.hero-logo::before {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.18) 25%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 70%
+  );
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(12px);
+}
+.hero-logo img {
+  max-width: 100%;
+  width: 100%;
+  max-height: 380px;
+  height: auto;
+  object-fit: contain;
+  /* Cores originais preservadas; sombra suave para destacar do halo */
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
+  opacity: 1;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 920px) {
+  .hero--split .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    text-align: center;
+  }
+  .hero--split .hero-content { text-align: center; }
+  .hero-logo { order: -1; padding: 0 0 12px; }
+  .hero-logo img { max-height: 200px; }
+  .hero-actions { justify-content: center; }
+}
+
+/* ── Footer logo: cores originais (sobrescreve style.css) ───────────── */
+.footer-logo img {
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 /* ── 2. Hero: H1 limpo (sem o <em> hardcoded) ──────────────── */

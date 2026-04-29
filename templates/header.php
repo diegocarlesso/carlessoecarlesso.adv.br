@@ -53,7 +53,7 @@ $pageDescOut  = $seoDesc  ?? '';
       <img src="/assets/images/logo_com_texto.png"
            alt="<?= e($siteTitle) ?>"
            class="logo-full">
-      <img src="/assets/images/logo_sem_texto.png"
+      <img src="/assets/images/logo_com_texto.png"
            alt=""
            class="logo-mark"
            aria-hidden="true">

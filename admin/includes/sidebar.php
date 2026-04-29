@@ -55,22 +55,20 @@ function navItem(string $href, ?string $perm, string $icon, string $label, ?stri
     </ul>
   </div>
 
-  <!-- Mensagens -->
+  <!-- Mensagens — visível a todos os usuários logados (decisão de produto) -->
   <?php
   $unreadCount = 0;
-  if (Auth::can('settings.manage')) {
-      try { $unreadCount = (int)(Database::fetchOne('SELECT COUNT(*) AS c FROM contatos WHERE lido=0')['c'] ?? 0); } catch (\Throwable $e) {}
-  }
+  try {
+      $unreadCount = (int) (Database::fetchOne('SELECT COUNT(*) AS c FROM contatos WHERE lido=0')['c'] ?? 0);
+  } catch (\Throwable $e) {}
   $badgeHtml = $unreadCount > 0 ? '<span class="badge">' . $unreadCount . '</span>' : '';
   ?>
-  <?php if (Auth::can('settings.manage')): ?>
   <div class="sidebar-section">
     <div class="sidebar-section-label">Comunicação</div>
     <ul class="sidebar-nav">
-      <?php navItem('/admin/contatos.php', 'settings.manage', '✉️', 'Mensagens', $badgeHtml); ?>
+      <?php navItem('/admin/contatos.php', null, '✉️', 'Mensagens', $badgeHtml); ?>
     </ul>
   </div>
-  <?php endif; ?>
 
   <!-- Configurações -->
   <?php

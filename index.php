@@ -12,10 +12,24 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/auth.php';
 
-// Determinar slug atual
-$slug = trim($_GET['slug'] ?? '', '/');
-$slug = $slug ?: 'inicio';
-$slug = preg_replace('/[^a-z0-9_-]/', '', strtolower($slug));
+// Determinar slug atual.
+// Suporta paths multi-segmento (/producoes/o-valor-do-...) mesmo se a regra
+// específica do .htaccess não disparar — split manual aqui.
+$rawSlug = trim((string) ($_GET['slug'] ?? ''), '/');
+$rawSlug = $rawSlug ?: 'inicio';
+
+// Split em segmentos: primeiro = página, segundo = $_GET['post']
+$segments = array_values(array_filter(explode('/', $rawSlug), 'strlen'));
+$firstSeg = $segments[0] ?? 'inicio';
+
+// Caso especial: /producoes/{post-slug} → page=producoes, post=slug
+// (cobre também outras páginas com padrão página/sub-recurso no futuro)
+if ($firstSeg === 'producoes' && !empty($segments[1]) && empty($_GET['post'])) {
+    $_GET['post'] = preg_replace('/[^a-z0-9_-]/i', '', $segments[1]);
+}
+
+// Slug da PÁGINA é apenas o primeiro segmento, normalizado
+$slug = preg_replace('/[^a-z0-9_-]/', '', strtolower($firstSeg)) ?: 'inicio';
 
 // Buscar página
 $page    = getPage($slug);

@@ -1,0 +1,7 @@
+Options -Indexes
+
+# Allowlist apenas dos endpoints do builder
+<FilesMatch "^(?!load\.php$|save\.php$|render\.php$).*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

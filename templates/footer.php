@@ -11,7 +11,6 @@ $endereco   = getConfig('endereco',      'R. Duque de Caxias, 1413 – Sala 301,
 $horario    = getConfig('horario',       'Segunda a Sexta, das 8h às 18h');
 $instagram  = getConfig('instagram', '#');
 $facebook   = getConfig('facebook',  '#');
-$linkedin   = getConfig('linkedin',  '#');
 $year       = date('Y');
 ?>
 

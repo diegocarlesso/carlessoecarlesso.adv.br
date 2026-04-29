@@ -32,7 +32,7 @@ $princ  = getContent('fundamentos', 'principios');
   </article>
 
   <!-- Visão -->
-  <article class="fundamento-card">
+  <article class="fundamento-card fundamento-card--full">
     <div class="fundamento-header">
       <div class="fundamento-icon"><?= svgIcon('eye') ?></div>
       <h3><?= e($visao['titulo'] ?? 'Visão') ?></h3>
