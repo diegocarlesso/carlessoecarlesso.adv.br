@@ -37,8 +37,11 @@ $seoData = getPageSeo($slug);
 $seoTitle= $seoData['meta_title'] ?? getConfig('site_titulo');
 $seoDesc = $seoData['meta_description'] ?? '';
 
-// 404
-if (!$page && $slug !== 'inicio') {
+// Páginas servidas apenas por template (sem registro no banco)
+$templateOnlyPages = ['privacidade'];
+
+// 404 — só dispara se não há página no banco E não é uma rota de template puro
+if (!$page && $slug !== 'inicio' && !in_array($slug, $templateOnlyPages, true)) {
     http_response_code(404);
     $seoTitle = '404 – Página não encontrada | ' . getConfig('site_titulo');
     include __DIR__ . '/templates/header.php';
@@ -50,6 +53,17 @@ if (!$page && $slug !== 'inicio') {
     </main>';
     include __DIR__ . '/templates/footer.php';
     exit;
+}
+
+// Dados de página para rotas de template puro (sem registro no banco)
+if (!$page && in_array($slug, $templateOnlyPages, true)) {
+    $pageTitles = ['privacidade' => 'Política de Privacidade e Cookies'];
+    $page = [
+        'titulo'  => $pageTitles[$slug] ?? ucfirst($slug),
+        'blocos'  => null,
+        'conteudo'=> null,
+    ];
+    $seoTitle = $page['titulo'] . ' | ' . getConfig('site_titulo');
 }
 
 // Header

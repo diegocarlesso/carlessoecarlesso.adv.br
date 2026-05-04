@@ -29,6 +29,11 @@ RedirectMatch 404 /bin/.*
 RewriteEngine On
 RewriteBase /
 
+# ── SEO: arquivos gerados dinamicamente ─────────────────────
+# Devem vir ANTES das condições genéricas (RewriteCond !-f)
+RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]
+RewriteRule ^robots\.txt$  robots.php  [L,QSA]
+
 # Arquivos e diretórios reais passam direto
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

@@ -21,6 +21,7 @@
     --c-text:       #1c1c1c;
     --c-text-muted: #6b7280;
     --c-white:      #fefefe;
+	--c-blue-cyan:  #1b577a;
 
     --f-serif:  'Hepta Slab', 'Georgia', serif;
     --f-sans:   'Open Sans', 'Helvetica Neue', sans-serif;
@@ -55,7 +56,7 @@ h1,h2,h3,h4,h5,h6 {
     line-height: 1.25;
     font-weight: 800;
 }
-h1 { font-size: clamp(2rem, 4vw, 3rem); }
+h1 { font-size: clamp(1.6rem, 3vw, 2.4rem); }
 h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
 h3 { font-size: clamp(1.1rem, 2vw, 1.5rem); }
 p  { margin-bottom: 1rem; }
@@ -327,12 +328,13 @@ p  { margin-bottom: 1rem; }
     box-shadow: 0 6px 20px rgba(200,131,42,.4);
 }
 .btn-outline {
-    background: transparent;
+    background: var(--c-gray-light);
     color: var(--c-white);
-    border-color: rgba(255,255,255,.5);
+    border-color:  var(--c-gray);
 }
 .btn-outline:hover {
-    background: rgba(255,255,255,.1);
+    background: #0d4d82;
+    border-color: #0d4d82;
     border-color: var(--c-white);
     color: var(--c-white);
 }
@@ -711,7 +713,7 @@ p  { margin-bottom: 1rem; }
     .footer-brand { grid-column: 1 / -1; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 920px) {
     :root { --header-h: 70px; }
     .menu-toggle { display: flex; }
     .site-nav {
@@ -726,7 +728,7 @@ p  { margin-bottom: 1rem; }
         overflow-y: auto;
         z-index: 999;
     }
-    .site-nav.open { display: flex; }
+    .site-nav.open { display: column; }
     .site-nav a { padding: 14px 16px; font-size: .85rem; border-radius: var(--radius); }
     .nav-dropdown { position: static; box-shadow: none; border: none; padding: 0 0 0 16px; background: transparent; }
     .nav-item:hover .nav-dropdown { display: none; }
@@ -995,7 +997,7 @@ p  { margin-bottom: 1rem; }
 .btn-outline.btn-dark {
   color: var(--c-navy);
   border-color: var(--c-navy);
-  background: transparent;
+  background: var(--c-blue-cyan);
 }
 .btn-outline.btn-dark:hover {
   background: var(--c-navy);
@@ -1211,7 +1213,7 @@ p  { margin-bottom: 1rem; }
   color: var(--c-primary);
 }
 .empty-state .empty-icon svg { width: 32px; height: 32px; }
-.empty-state h3 { color: var(--c-navy); font-size: 1.4rem; margin-bottom: 10px; }
+.empty-state h3 { color: var(--c-navy); font-size: 1rem; margin-bottom: 10px; }
 .empty-state p { color: var(--c-text-muted); font-size: .95rem; }
 
 /* ── Stats institucionais (escritório) ──────────────────── */
@@ -1322,13 +1324,13 @@ p  { margin-bottom: 1rem; }
 .fundamento-card h3 {
   margin: 0;
   color: var(--c-navy);
-  font-size: 1.4rem;
+  font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
 .fundamento-card p {
   color: var(--c-text);
-  font-size: .95rem;
+  font-size: .85rem;
   line-height: 1.85;
 }
 .principios-list {
@@ -1411,7 +1413,7 @@ p  { margin-bottom: 1rem; }
 }
 .page-header > * { position: relative; }
 .page-header h1 {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.3rem, 2.5vw, 1.9rem);
   color: var(--c-white);
 }
 .page-header .breadcrumb {
@@ -1431,7 +1433,7 @@ p  { margin-bottom: 1rem; }
   .fundamentos-layout { grid-template-columns: 1fr; }
   .cta-inner { flex-direction: column; text-align: center; }
 }
-@media (max-width: 768px) {
+@media (max-width: 920px) {
   .principles-row { gap: 8px 14px; }
   .principle { font-size: .82rem; padding: 8px 14px; }
   .institutional-stats { grid-template-columns: 1fr 1fr; }

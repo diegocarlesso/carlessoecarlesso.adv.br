@@ -2,8 +2,12 @@
 // templates/contato.php — v1.2 (mapa sem API key)
 if (!defined('CARLESSO_CMS')) exit;
 require_once __DIR__ . '/../includes/csrf.php';
-
-$telefone = getConfig('telefone',      '(49) 3621-2254');
+$telefone_g   = getConfig('telefone_g',      '+55(49)98437-1381');
+$whatsapp_g   = getConfig('whatsapp_g',      preg_replace('/\D/', '', $telefone_g));
+$telefone_j   = getConfig('telefone_j',      '+55(49)98438-0755');
+$whatsapp_j   = getConfig('whatsapp_j',      preg_replace('/\D/', '', $telefone_j));
+$telefone_g_t   = getConfig('telefone_g_t',      'Dr. Guilherme');
+$telefone_j_t   = getConfig('telefone_j_t',      'Dr Jean');
 $email    = getConfig('email_contato', 'contato@carlessoecarlesso.adv.br');
 $endereco = getConfig('endereco',      'R. Duque de Caxias, 1413 – Sala 301, Centro, São Miguel do Oeste – SC');
 $horario  = getConfig('horario',       'Segunda a Sexta, das 8h às 18h');
@@ -39,13 +43,41 @@ $mapaLng   = getConfig('mapa_lng', '-53.5189');
     <div class="item">
       <div class="ico"><?= svgIcon('phone') ?></div>
       <div>
-        <div class="label">Telefone</div>
+        <div class="label">Telefone Dr Guilherme</div>
         <div class="val">
-          <a href="tel:<?= e(preg_replace('/\D/', '', $telefone)) ?>"><?= e($telefone) ?></a>
+          <a href="tel:<?= e(preg_replace('/\D/', '', $telefone_g)) ?>"><?= e($telefone_g) ?></a>
         </div>
+        <?php if ($whatsapp_g): ?>
+        <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_g)) ?>"
+           target="_blank" rel="noopener"
+           aria-label="WhatsApp Dr. Guilherme"
+           class="whatsapp-btn">
+          <span class="i i-whatsapp"></span>
+          <span class="tooltip">WhatsApp Dr. Guilherme</span>
+        </a>
+        <?php endif; ?>
       </div>
     </div>
 
+    <div class="item">
+      <div class="ico"><?= svgIcon('phone') ?></div>
+      <div>
+        <div class="label">Telefone Dr Jean</div>
+        <div class="val">
+          <a href="tel:<?= e(preg_replace('/\D/', '', $telefone_j)) ?>"><?= e($telefone_j) ?></a>
+        </div>
+		<?php if ($whatsapp_j): ?>
+        <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_j)) ?>"
+           target="_blank" rel="noopener"
+           aria-label="WhatsApp Dr. Jean"
+           class="whatsapp-btn">
+          <span class="i i-whatsapp"></span>
+          <span class="tooltip">WhatsApp Dr. Jean</span>
+        </a>
+        <?php endif; ?>
+      </div>
+    </div>
+	
     <div class="item">
       <div class="ico"><?= svgIcon('envelope') ?></div>
       <div>

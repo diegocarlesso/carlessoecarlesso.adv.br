@@ -4,8 +4,10 @@ if (!defined('CARLESSO_CMS')) exit;
 
 $siteTitle  = getConfig('site_titulo', 'Carlesso & Carlesso Advogados Associados');
 $footerText = getCustomization('footer_text', 'Todos os direitos reservados.');
-$telefone   = getConfig('telefone',      '(49) 3621-2254');
-$whatsapp   = getConfig('whatsapp',      preg_replace('/\D/', '', $telefone));
+$telefone_g   = getConfig('telefone_g',      '+5549984371381');
+$whatsapp_g   = getConfig('whatsapp_g',      preg_replace('/\D/', '', $telefone_g));
+$telefone_j   = getConfig('telefone_j',      '+5549984380755');
+$whatsapp_j   = getConfig('whatsapp_j',      preg_replace('/\D/', '', $telefone_j));
 $email      = getConfig('email_contato', 'contato@carlessoecarlesso.adv.br');
 $endereco   = getConfig('endereco',      'R. Duque de Caxias, 1413 – Sala 301, Centro, São Miguel do Oeste – SC');
 $horario    = getConfig('horario',       'Segunda a Sexta, das 8h às 18h');
@@ -46,9 +48,23 @@ $year       = date('Y');
             <span class="i i-linkedin"></span>
           </a>
           <?php endif; ?>
-          <?php if ($whatsapp): ?>
-          <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp)) ?>" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <?php if ($whatsapp_g): ?>
+          <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_g)) ?>"
+             target="_blank" rel="noopener"
+             aria-label="WhatsApp Dr. Guilherme"
+             class="whatsapp-btn">
             <span class="i i-whatsapp"></span>
+            <span class="tooltip">WhatsApp Dr. Guilherme</span>
+          </a>
+          <?php endif; ?>
+          
+          <?php if ($whatsapp_j): ?>
+          <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_j)) ?>"
+             target="_blank" rel="noopener"
+             aria-label="WhatsApp Dr. Jean"
+             class="whatsapp-btn">
+            <span class="i i-whatsapp"></span>
+            <span class="tooltip">WhatsApp Dr. Jean</span>
           </a>
           <?php endif; ?>
         </div>
@@ -80,10 +96,6 @@ $year       = date('Y');
           <a href="mailto:<?= e($email) ?>"><?= e($email) ?></a>
         </p>
         <p>
-          <span class="i i-phone" aria-hidden="true"></span>
-          <a href="tel:<?= e(preg_replace('/\D/', '', $telefone)) ?>"><?= e($telefone) ?></a>
-        </p>
-        <p>
           <span class="i i-clock" aria-hidden="true"></span>
           <?= e($horario) ?>
         </p>
@@ -100,5 +112,8 @@ $year       = date('Y');
 
 <!-- Scripts -->
 <script src="/assets/js/main.js" defer></script>
+<script src="/assets/js/cookie-consent.js" defer></script>
+
+<?php include __DIR__ . '/cookie-banner.php'; ?>
 </body>
 </html>

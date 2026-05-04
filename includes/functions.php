@@ -189,21 +189,127 @@ if (!function_exists('handleUpload')) {
             return ['success' => false, 'message' => 'Falha ao salvar arquivo.'];
         }
 
-        $urlPath = '/assets/images/' . $filename;
-        Database::insert('media', [
+        // ── Geração de variantes WebP responsivas ──────────────────────────
+        // Determina o prefixo URL a partir do destino físico
+        $urlBase      = '/' . ltrim(str_replace(PUBLIC_PATH, '', $dest), '/');
+        $urlPath      = $urlBase . '/' . $filename;
+        $variantsJson = null;
+
+        $imageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (in_array($mimeReal, $imageTypes, true)
+            && class_exists(\Carlesso\Services\ImageProcessor::class)
+            && \Carlesso\Services\ImageProcessor::isAvailable()
+        ) {
+            $variants = \Carlesso\Services\ImageProcessor::process($fullPath, $urlBase);
+            if (!empty($variants)) {
+                $variantsJson = json_encode(['webp' => $variants], JSON_UNESCAPED_SLASHES);
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────
+
+        // Insere no banco — tenta com coluna `variants`, cai sem ela se não existir
+        $mediaData = [
             'filename'      => $filename,
             'original_name' => $file['name'],
             'file_path'     => $urlPath,
             'file_type'     => $mimeReal,
             'file_size'     => $file['size'],
-        ]);
+            'variants'      => $variantsJson,
+        ];
+
+        try {
+            Database::insert('media', $mediaData);
+        } catch (\Throwable $e) {
+            // Coluna `variants` pode ainda não existir — tenta sem ela
+            unset($mediaData['variants']);
+            Database::insert('media', $mediaData);
+        }
 
         return [
             'success'  => true,
             'filename' => $filename,
             'url'      => $urlPath,
+            'variants' => $variantsJson ? json_decode($variantsJson, true)['webp'] : [],
             'id'       => Database::lastId(),
         ];
+    }
+}
+
+/**
+ * generateSrcset — Retorna string srcset para uma imagem já uploadada,
+ * buscando as variantes WebP armazenadas na tabela `media`.
+ *
+ * Retorna string vazia se não houver variantes ou a coluna não existir.
+ *
+ * @param  string $urlPath  URL pública da imagem (ex: /assets/images/xyz.jpg)
+ * @return string           srcset attribute value ou ''
+ */
+if (!function_exists('generateSrcset')) {
+    function generateSrcset(string $urlPath): string
+    {
+        if (empty($urlPath)) return '';
+
+        try {
+            $row = Database::fetchOne(
+                'SELECT variants FROM media WHERE file_path = ? LIMIT 1',
+                [$urlPath]
+            );
+            if (empty($row['variants'])) return '';
+
+            $data = json_decode($row['variants'], true);
+            if (!is_array($data) || empty($data['webp'])) return '';
+
+            return \Carlesso\Services\ImageProcessor::buildSrcset($data['webp']);
+        } catch (\Throwable $e) {
+            // Coluna não existe ou DB indisponível — degradação silenciosa
+            return '';
+        }
+    }
+}
+
+/**
+ * renderImageBlock — Renderiza bloco de imagem V1 com suporte a <picture>/srcset.
+ *
+ * Usa <picture> + <source type="image/webp"> quando variantes existem,
+ * mantendo <img> original como fallback para browsers antigos.
+ */
+if (!function_exists('renderImageBlock')) {
+    function renderImageBlock(array $data): string
+    {
+        $url     = $data['url']     ?? '';
+        $alt     = $data['alt']     ?? '';
+        $caption = $data['caption'] ?? '';
+        $align   = in_array($data['align'] ?? '', ['left', 'right', 'center'], true)
+                     ? $data['align']
+                     : 'center';
+
+        if (empty($url)) return '';
+
+        $srcset = generateSrcset($url);
+
+        $imgTag = sprintf(
+            '<img src="%s" alt="%s" loading="lazy" decoding="async"%s%s>',
+            e($url),
+            e($alt),
+            $srcset ? ' srcset="' . $srcset . '"' : '',
+            $srcset ? ' sizes="(max-width: 480px) 100vw, (max-width: 960px) 800px, 1200px"' : ''
+        );
+
+        // Envolve em <picture> com <source webp> quando há variantes
+        $body = $srcset
+            ? sprintf(
+                '<picture><source type="image/webp" srcset="%s" sizes="(max-width:480px) 100vw,(max-width:960px) 800px,1200px">%s</picture>',
+                $srcset,
+                $imgTag
+              )
+            : $imgTag;
+
+        return sprintf(
+            '<figure class="block-image %s">%s%s</figure>',
+            e($align),
+            $body,
+            $caption !== '' ? '<figcaption>' . e($caption) . '</figcaption>' : ''
+        );
     }
 }
 
@@ -269,13 +375,7 @@ if (!function_exists('renderBlock')) {
                 e($data['style'] ?? ''),
                 sanitizeHtml($data['html'] ?? '')
             ),
-            'image' => sprintf(
-                '<figure class="block-image %s"><img src="%s" alt="%s" loading="lazy"><figcaption>%s</figcaption></figure>',
-                e($data['align'] ?? 'center'),
-                e($data['url'] ?? ''),
-                e($data['alt'] ?? ''),
-                e($data['caption'] ?? '')
-            ),
+            'image' => renderImageBlock($data),
             'button' => sprintf(
                 '<div class="block-button-wrap text-%s"><a href="%s" class="block-btn btn-style-%s">%s</a></div>',
                 e($data['align'] ?? 'left'),

@@ -3,8 +3,10 @@
 if (!defined('CARLESSO_CMS')) exit;
 
 $siteTitle    = getConfig('site_titulo', 'Carlesso & Carlesso Advogados Associados');
-$telefone     = getConfig('telefone', '(49) 3621-2254');
-$whatsapp     = getConfig('whatsapp', preg_replace('/\D/', '', $telefone));
+$telefone_g   = getConfig('telefone_g',      '+5549984371381');
+$whatsapp_g   = getConfig('whatsapp_g',      preg_replace('/\D/', '', $telefone_g));
+$telefone_j   = getConfig('telefone_j',      '+5549984380755');
+$whatsapp_j   = getConfig('whatsapp_j',      preg_replace('/\D/', '', $telefone_j));
 $instagram    = getConfig('instagram', '#');
 $facebook     = getConfig('facebook', '#');
 $currentSlug  = $slug ?? 'inicio';
@@ -43,7 +45,23 @@ $pageDescOut  = $seoDesc  ?? '';
   <link rel="stylesheet" href="/assets/icons/icons.css?v=1">
 </head>
 <body data-page="<?= e($currentSlug) ?>">
-
+<!-- Google Consent Mode v2 — padrão: negado até consentimento LGPD -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    analytics_storage:    'denied',
+    ad_storage:           'denied',
+    ad_user_data:         'denied',
+    ad_personalization:   'denied',
+    wait_for_update:      500
+  });
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5D5L5MHMF5"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', 'G-5D5L5MHMF5', { anonymize_ip: true });
+</script>
 <a href="#main-content" class="skip-link">Pular para o conteúdo</a>
 
 <header id="site-header" role="banner">
@@ -80,10 +98,23 @@ $pageDescOut  = $seoDesc  ?? '';
         <span class="i i-instagram"></span>
       </a>
       <?php endif; ?>
-      <?php if ($whatsapp): ?>
-      <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp)) ?>"
-         target="_blank" rel="noopener" aria-label="WhatsApp">
+      <?php if ($whatsapp_g): ?>
+      <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_g)) ?>"
+         target="_blank" rel="noopener"
+         aria-label="WhatsApp Dr. Guilherme"
+         class="whatsapp-btn">
         <span class="i i-whatsapp"></span>
+        <span class="tooltip">WhatsApp Dr. Guilherme</span>
+      </a>
+      <?php endif; ?>
+      
+      <?php if ($whatsapp_j): ?>
+      <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $whatsapp_j)) ?>"
+         target="_blank" rel="noopener"
+         aria-label="WhatsApp Dr. Jean"
+         class="whatsapp-btn">
+        <span class="i i-whatsapp"></span>
+        <span class="tooltip">WhatsApp Dr. Jean</span>
       </a>
       <?php endif; ?>
     </div>

@@ -7,7 +7,10 @@ $banner_subtitulo = getContent('inicio', 'banner_subtitulo');
 $banner_descricao = getContent('inicio', 'banner_descricao');
 $sobre_titulo     = getContent('inicio', 'sobre_titulo');
 $sobre_descricao  = getContent('inicio', 'sobre_descricao');
-$telefone         = getConfig('telefone', '(49) 3621-2254');
+$telefone_g   = getConfig('telefone_g',      '+55 (49) 98437-1381');
+$telefone_g_t   = getConfig('telefone_g_t',      'Dr. Guilherme');
+$telefone_j   = getConfig('telefone_j',      '+55 (49) 98438-0755');
+$telefone_j_t   = getConfig('telefone_j_t',      'Dr Jean');
 
 $servicos = [
     ['slug' => 'previdenciario', 'icon' => 'people',   'data' => getContent('servicos', 'previdenciario'), 'nome' => 'Direito Previdenciário'],
@@ -182,8 +185,11 @@ if (!empty($recentPosts)):
       <p>Estamos prontos para atendê-lo com o sigilo e o zelo que sua causa merece.</p>
     </div>
     <div class="cta-actions">
-      <a href="tel:<?= e(preg_replace('/\D/','',$telefone)) ?>" class="btn btn-primary">
-        <span class="i i-phone"></span> <?= e($telefone) ?>
+      <a href="tel:<?= e(preg_replace('/\D/','',$telefone_g)) ?>" class="btn btn-primary">
+        <span class="i i-phone"></span> <?= e($telefone_g_t) ?>
+      </a>
+      <a href="tel:<?= e(preg_replace('/\D/','',$telefone_j)) ?>" class="btn btn-primary">
+        <span class="i i-phone"></span> <?= e($telefone_j_t) ?>
       </a>
       <a href="/contato" class="btn btn-outline">Enviar mensagem</a>
     </div>
