@@ -104,18 +104,26 @@ try {
         exit;
     }
 
-    // Persiste
-    $update = ['blocos' => json_encode($tree, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
-    if (in_array($status, ['rascunho', 'publicado'], true)) {
-        $update['status'] = $status;
-    }
-    // marca versão V2 se a coluna existe
-    try {
-        Database::query("SHOW COLUMNS FROM paginas LIKE 'blocks_version'");
-        $update['blocks_version'] = 2;
-    } catch (\Throwable) {}
+    // Persiste — usa SQL direto para compatibilidade com qualquer wrapper PDO
+    $json = json_encode($tree, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-    Database::update('paginas', $update, 'id = ?', [$pageId]);
+    if (in_array($status, ['rascunho', 'publicado'], true)) {
+        $sql    = 'UPDATE paginas SET blocos = ?, status = ?, updated_at = NOW() WHERE id = ?';
+        $params = [$json, $status, $pageId];
+    } else {
+        $sql    = 'UPDATE paginas SET blocos = ?, updated_at = NOW() WHERE id = ?';
+        $params = [$json, $pageId];
+    }
+
+    // Tenta execute() primeiro (PDO wrapper genérico), depois query()
+    if (method_exists('Database', 'execute')) {
+        Database::execute($sql, $params);
+    } elseif (method_exists('Database', 'query')) {
+        Database::query($sql, $params);
+    } else {
+        // Fallback bruto — nunca deve chegar aqui num projeto com Database wrapper
+        throw new \RuntimeException('Database não tem execute() nem query().');
+    }
 
     echo json_encode([
         'ok'       => true,

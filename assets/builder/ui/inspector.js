@@ -26,15 +26,19 @@ export class Inspector {
     this.registry = blockRegistry;
 
     this._renderBound = this._render.bind(this);
-    this._unsubSel  = store.subscribeSlice(s => s.selectedId, this._renderBound);
-    this._unsubTree = store.subscribeSlice(s => s.tree,       this._renderBound);
+
+    // Re-renderiza APENAS quando o bloco selecionado muda.
+    // NÃO assina mudanças de tree — isso evita que o inspector
+    // refaça o DOM (e perca o foco do input) a cada keystroke do usuário.
+    // Os campos de input mantêm seus valores via estado DOM nativo;
+    // o canvas (que assina tree) cuida de refletir as mudanças visualmente.
+    this._unsubSel = store.subscribeSlice(s => s.selectedId, this._renderBound);
 
     this._render();
   }
 
   destroy() {
     this._unsubSel?.();
-    this._unsubTree?.();
   }
 
   _render() {
@@ -64,9 +68,54 @@ export class Inspector {
     this.root.appendChild(this._header(block, node));
 
     // Body — campos do bloco
+    // onChange é passado para block.inspect(). Os blocos fecham sobre
+    // `s = node.settings` da hora do render, o que gera um "stale closure"
+    // se o usuário mudar dois campos no mesmo namespace sem re-selecionar.
+    //
+    // Para mitigar: lemos o nó FRESCO do store antes de cada update e
+    // fazemos merge namespace-a-namespace. Assim campos não alterados nessa
+    // chamada específica não sobrescrevem mudanças anteriores.
+    const nodeId  = node.id;
     const onChange = (updates) => {
-      // Action única — sem setState direto
-      this.store.updateBlock(node.id, updates);
+      if (!updates) return;
+
+      if (updates.settings && typeof updates.settings === 'object') {
+        // Lê nó atual (pode já ter sido atualizado por chamadas anteriores)
+        const freshNode = this.store.getSelected();
+        if (freshNode && freshNode.id === nodeId) {
+          const cur      = freshNode.settings || {};
+          const incoming = updates.settings;
+
+          // Merge namespace-a-namespace: only overwrite keys present in incoming ns
+          const merged = {
+            content:  { ...(cur.content  || {}) },
+            style:    { ...(cur.style    || {}) },
+            layout:   { ...(cur.layout   || {}) },
+            _legacy:  { ...(cur._legacy  || {}) },
+          };
+          for (const ns of ['content', 'style', 'layout']) {
+            if (incoming[ns] && typeof incoming[ns] === 'object') {
+              merged[ns] = { ...merged[ns], ...incoming[ns] };
+            }
+          }
+          // Flat keys (blocos pré-migração de namespaces) vão para _legacy
+          for (const [k, v] of Object.entries(incoming)) {
+            if (!['content', 'style', 'layout', '_legacy'].includes(k)) {
+              merged._legacy[k] = v;
+            }
+          }
+          // _legacy explícito no incoming também é mergeado (não sobrescrito)
+          if (incoming._legacy && typeof incoming._legacy === 'object') {
+            merged._legacy = { ...merged._legacy, ...incoming._legacy };
+          }
+
+          this.store.updateBlock(nodeId, { ...updates, settings: merged });
+          return;
+        }
+      }
+
+      // Fallback: sem settings no update (ex: children, type) — repassa direto
+      this.store.updateBlock(nodeId, updates);
     };
 
     let fields;

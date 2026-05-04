@@ -197,16 +197,32 @@ export class Store {
   }
 
   /**
-   * Substitui a árvore inteira (usado no boot, após load).
-   * Reseta dirty.
+   * Define a página atual (metadados, não a tree).
+   * Chamado após load bem-sucedido da API.
    */
-  hydrateTree(tree, opts = {}) {
-    this._setState({
+  setPage(page) {
+    if (!page) return;
+    this._setState({ page });
+  }
+
+  /**
+   * Substitui a árvore inteira (usado no boot, após load).
+   * Aceita também os metadados da página para atualizar num só setState.
+   * Reseta dirty/selectedId.
+   *
+   * @param {{ version: number, blocks: [] }} tree
+   * @param {{ id, titulo, slug, status }|null} page — opcional
+   * @param {{ savedAt?: string }} opts
+   */
+  hydrateTree(tree, page = null, opts = {}) {
+    const update = {
       tree:       (tree && Array.isArray(tree.blocks)) ? tree : { version: 2, blocks: [] },
       selectedId: null,
       dirty:      false,
       savedAt:    opts.savedAt ?? null,
-    });
+    };
+    if (page) update.page = page;
+    this._setState(update);
   }
 
   // ═══════════════════════════════════════════════════════════════════════

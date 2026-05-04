@@ -1,11 +1,19 @@
 /**
  * blocks/section.js — Container raiz. Agrupa colunas horizontalmente.
  *
- * É um bloco-container: render() chama ctx.render(child) recursivamente
- * para cada filho.
+ * Migrado para shape canônico content/style/layout (Tarefa 3).
+ *
+ * Namespaces:
+ *   content: {}                                       (sem conteúdo textual)
+ *   style:   { background_color, text_color }         (aparência visual)
+ *   layout:  { container, padding }                   (estrutura/espaçamento)
+ *
+ * getSetting() cuida do fallback para keys flat em _legacy — garante
+ * compatibilidade com dados salvos antes da migração.
  */
 
 import { field, fieldset } from '../ui/inspector-fields.js';
+import { getSetting, mergeSettings } from '../core/tree.js';
 
 export const SectionBlock = {
   type:  'section',
@@ -14,77 +22,100 @@ export const SectionBlock = {
   category: 'layout',
   isContainer: true,
 
+  // ── Defaults em namespaces canônicos ──────────────────────────────────
   defaultSettings() {
     return {
-      container:        'boxed',
-      background_color: '',
-      text_color:       '',
-      padding:          'lg',
+      content: {},
+      style:   { background_color: '', text_color: '' },
+      layout:  { container: 'boxed', padding: 'lg' },
     };
   },
 
   defaultChildren() {
     // toda section nasce com 1 column 100%
-    // (o app.js usa createNode pra dar id real)
+    // (Store.addBlockFromDef usa createNode para gerar id real)
     return [
-      { type: 'column', settings: { width: { desktop: 100 } }, children: [] },
+      { type: 'column', settings: { layout: { width: { desktop: 100 } } }, children: [] },
     ];
   },
 
+  // ── Render — usa getSetting para suportar flat legacy E namespaces ─────
   render(node, ctx) {
     const s   = node.settings;
     const sec = document.createElement('section');
     sec.className = 'block-section';
 
-    if (s.container && s.container !== 'inherit') {
-      sec.classList.add(`container-${s.container}`);
+    // getSetting faz: namespace → _legacy → flat direto (3 níveis de fallback)
+    const container = getSetting(s, 'layout', 'container', 'boxed');
+    const padding   = getSetting(s, 'layout', 'padding',   'lg');
+    const bgColor   = getSetting(s, 'style',  'background_color', '');
+    const txtColor  = getSetting(s, 'style',  'text_color',       '');
+
+    if (container && container !== 'inherit') {
+      sec.classList.add(`container-${container}`);
     }
-    if (s.padding) {
-      sec.classList.add(`p-d-${s.padding}`);
+    if (padding) {
+      sec.classList.add(`p-d-${padding}`);
     }
-    if (s.background_color) sec.style.backgroundColor = s.background_color;
-    if (s.text_color)       sec.style.color           = s.text_color;
+    if (bgColor)  sec.style.backgroundColor = bgColor;
+    if (txtColor) sec.style.color           = txtColor;
 
     const row = document.createElement('div');
     row.className = 'section-row';
     sec.appendChild(row);
 
-    if (Array.isArray(node.children) && node.children.length) {
-      node.children.forEach(child => row.appendChild(ctx.render(child)));
+    // ctx.renderChildren() retorna Array de HTMLElement já com data-node-id
+    const childEls = ctx.renderChildren();
+    if (childEls.length) {
+      childEls.forEach(el => row.appendChild(el));
     } else {
       const empty = document.createElement('div');
       empty.className = 'builder-section-empty';
-      empty.textContent = '+ Adicione blocos pelo painel esquerdo';
+      empty.dataset.placeholder = 'true';
+      empty.textContent = '+ Adicione colunas ou blocos pelo painel esquerdo';
       row.appendChild(empty);
     }
+
     return sec;
   },
 
+  // ── Inspector — usa mergeSettings para update imutável por namespace ───
   inspect(node, onChange) {
     const s = node.settings;
+
+    // setNs: aplica partial em um namespace e envia o settings completo
+    const setNs = (ns, partial) =>
+      onChange({ settings: mergeSettings(s, ns, partial) });
+
     return [
       fieldset('Layout', [
-        field('select', 'Largura', s.container || 'boxed',
-          v => onChange({ settings: { container: v } }),
+        field('select', 'Largura do container',
+          getSetting(s, 'layout', 'container', 'boxed'),
+          v => setNs('layout', { container: v }),
           { options: [
             ['boxed', 'Limitada (1200px)'],
             ['wide',  'Larga (1480px)'],
             ['full',  'Tela cheia'],
           ] }
         ),
-        field('select', 'Espaçamento interno', s.padding || 'lg',
-          v => onChange({ settings: { padding: v } }),
+        field('select', 'Espaçamento interno',
+          getSetting(s, 'layout', 'padding', 'lg'),
+          v => setNs('layout', { padding: v }),
           { options: [
             ['none','Nenhum'],['xs','XS'],['sm','SM'],['md','MD'],
-            ['lg','LG'],['xl','XL'],['xxl','XXL']
+            ['lg','LG'],['xl','XL'],['xxl','XXL'],
           ] }
         ),
       ]),
       fieldset('Cores', [
-        field('color', 'Cor de fundo', s.background_color || '',
-          v => onChange({ settings: { background_color: v } })),
-        field('color', 'Cor do texto', s.text_color || '',
-          v => onChange({ settings: { text_color: v } })),
+        field('color', 'Cor de fundo',
+          getSetting(s, 'style', 'background_color', ''),
+          v => setNs('style', { background_color: v })
+        ),
+        field('color', 'Cor do texto',
+          getSetting(s, 'style', 'text_color', ''),
+          v => setNs('style', { text_color: v })
+        ),
       ]),
     ];
   },

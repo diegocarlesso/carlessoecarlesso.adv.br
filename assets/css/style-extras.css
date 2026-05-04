@@ -70,7 +70,7 @@
   position: absolute;
   right: -30px;
   top: auto;
-  display: inline-grid;
+  display: flex;
   gap: 8px;
   z-index: 10;
 }

@@ -48,23 +48,8 @@ boot().catch(err => {
 });
 
 async function boot() {
-  setSaveState('Carregando…');
-  const data = await loadTree(BOOT.pageId);
-  if (!data?.ok) throw new Error(data?.error || 'Falha ao carregar a página.');
-  if (data.csrf) BOOT.csrf = data.csrf;
-
-  const store = new Store({
-    page:       data.page,
-    tree:       data.tree && Array.isArray(data.tree.blocks)
-                  ? data.tree
-                  : { version: 2, blocks: [] },
-    selectedId: null,
-    device:     'desktop',
-    mode:       'edit',
-    dirty:      false,
-    savedAt:    null,
-  });
-
+  // ── 1. Store vazio — UI já pode montar e subscribir ───────────────────
+  const store = new Store();
   const render = makeRenderer(BLOCK_REGISTRY);
 
   // eslint-disable-next-line no-unused-vars
@@ -74,10 +59,22 @@ async function boot() {
   // eslint-disable-next-line no-unused-vars
   const sidebar   = new Sidebar(els.sidebar, store, BLOCK_REGISTRY);
 
-  // Topbar: save state reativo (subscribeSlice é leitura, ok)
+  // Topbar: save state reativo
   store.subscribeSlice(s => s.dirty, (dirty) => {
     setSaveState(dirty ? 'Mudanças não salvas' : 'Salvo');
   });
+
+  // ── 2. Carrega tree da API e hidrata o store ───────────────────────────
+  // Canvas/Inspector já estão subscribed → re-renderizam automaticamente
+  // quando hydrateTree chama _setState.
+  setSaveState('Carregando…');
+  const data = await loadTree(BOOT.pageId);
+  if (!data?.ok) throw new Error(data?.error || 'Falha ao carregar a página.');
+  if (data.csrf) BOOT.csrf = data.csrf;   // atualiza token para o save
+
+  // hydrateTree dispara os subscribers: Canvas re-renderiza a árvore,
+  // Inspector mostra "Selecione um bloco" (selectedId = null).
+  store.hydrateTree(data.tree, data.page);
   setSaveState('Pronto');
 
   els.saveBtn?.addEventListener('click', () => saveTree(store));
